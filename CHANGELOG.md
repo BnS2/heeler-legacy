@@ -5,10 +5,15 @@ All notable changes to Heeler are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Entries reference the pull request that made the change.
 
-## Heeler Legacy (Unreleased)
+## Heeler Legacy 0.1.0 (pre-release)
 
-- Run the app on iOS 16 with SwiftUI and observation compatibility fallbacks.
-  Widgets and test bundles retain an iOS 18 minimum.
+- Lower the app minimum to iOS 16, with compatibility fallbacks and corrected
+  foreground updates.
+- Add Apple speech recognition, Chat as the default view, terminal tap to type,
+  and faster reconnects.
+- Support sideload signing without the shared keychain entitlement.
+- Omit extensions from the sideload IPA. Overlay networks remain untested on
+  iOS 16. See the fork README for build and installation limits.
 
 ## [Unreleased]
 

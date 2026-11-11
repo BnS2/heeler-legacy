@@ -39,7 +39,7 @@ struct HeelerApp: App {
             #endif
             await pushDelegate.appModel.refreshUsageInBackground()
         }
-        // ios16: use the passed phase; `self.scenePhase` in this closure is the previous one.
+        // iOS 16: use the passed phase; `self.scenePhase` in this closure is the previous one.
         .onChange(of: scenePhase) { newPhase in
             #if DEBUG && targetEnvironment(simulator)
                 guard !DemoScreenshotMode.isEnabled else { return }

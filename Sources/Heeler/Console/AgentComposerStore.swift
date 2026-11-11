@@ -164,7 +164,16 @@ final class AgentComposerStore: ObservableObject, ComposerDraftOperations {
         self.agentNotReadyRetryBudget = agentNotReadyRetryBudget
         self.prompt = prompt
         voice.onTranscript = { [weak self] in self?.insertVoiceTextIfReady() }
+        // iOS 16: @Observable tracked `store.voice` reads through the store; ObservableObject
+        // does not, so the Composer redrew only when something else changed. `levels` is
+        // left out: it ticks every 70 ms and only the bar reads it.
+        voiceChanges = [
+            voice.$phase.removeDuplicates().sink { [weak self] _ in self?.objectWillChange.send() },
+            voice.$isHoldingSend.removeDuplicates().sink { [weak self] _ in self?.objectWillChange.send() },
+        ]
     }
+
+    private var voiceChanges: Set<AnyCancellable> = []
 
     /// The shell-readiness wait in `HeelerSSHTransport.startAgentAwaitingShell`
     /// ends once herdr accepts `agent.start`, and since 0.8.0 herdr accepts it

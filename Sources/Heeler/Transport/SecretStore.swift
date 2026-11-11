@@ -52,7 +52,37 @@ struct KeychainSecretStore: SecretStore {
     let service: String
     var accessGroup: String?
 
+    /// iOS 16: a sideloaded free-account build has no app-group entitlement,
+    /// so a keychain access group fails with errSecMissingEntitlement (-34018). Fall back
+    /// to the app's own default group; the Notification extension is not shipped there.
+    private var withoutGroup: KeychainSecretStore { KeychainSecretStore(service: service, accessGroup: nil) }
+    private static let missingEntitlement: OSStatus = -34018
+
     func read(account: String) throws -> Data? {
+        do { return try readOnce(account: account) } catch KeychainError.unexpectedStatus(Self.missingEntitlement) where accessGroup != nil {
+            return try withoutGroup.readOnce(account: account)
+        }
+    }
+
+    func readAll() throws -> [String: Data] {
+        do { return try readAllOnce() } catch KeychainError.unexpectedStatus(Self.missingEntitlement) where accessGroup != nil {
+            return try withoutGroup.readAllOnce()
+        }
+    }
+
+    func write(_ secret: Data, account: String) throws {
+        do { try writeOnce(secret, account: account) } catch KeychainError.unexpectedStatus(Self.missingEntitlement) where accessGroup != nil {
+            try withoutGroup.writeOnce(secret, account: account)
+        }
+    }
+
+    func removeSecret(account: String) throws {
+        do { try removeOnce(account: account) } catch KeychainError.unexpectedStatus(Self.missingEntitlement) where accessGroup != nil {
+            try withoutGroup.removeOnce(account: account)
+        }
+    }
+
+    private func readOnce(account: String) throws -> Data? {
         var query = baseQuery(account: account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -68,7 +98,7 @@ struct KeychainSecretStore: SecretStore {
         }
     }
 
-    func readAll() throws -> [String: Data] {
+    private func readAllOnce() throws -> [String: Data] {
         var query = baseQuery()
         query[kSecReturnData as String] = true
         query[kSecReturnAttributes as String] = true
@@ -92,7 +122,7 @@ struct KeychainSecretStore: SecretStore {
         }
     }
 
-    func write(_ secret: Data, account: String) throws {
+    private func writeOnce(_ secret: Data, account: String) throws {
         var attributes = baseQuery(account: account)
         attributes[kSecValueData as String] = secret
         attributes[kSecAttrAccessible as String] =
@@ -113,7 +143,7 @@ struct KeychainSecretStore: SecretStore {
         }
     }
 
-    func removeSecret(account: String) throws {
+    private func removeOnce(account: String) throws {
         let status = SecItemDelete(baseQuery(account: account) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError.unexpectedStatus(status)

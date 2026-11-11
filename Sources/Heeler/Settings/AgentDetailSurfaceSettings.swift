@@ -55,7 +55,7 @@ final class AgentDetailSurfaceSettings: ObservableObject {
         self.defaults = defaults
         preferred =
             defaults.string(forKey: Self.defaultsKey)
-            .flatMap(AgentDetailSurface.init(rawValue:)) ?? .terminal
+            .flatMap(AgentDetailSurface.init(rawValue:)) ?? .chat  // iOS 16: raw Agent terminal typing is poor on iPad
     }
 
     func select(_ surface: AgentDetailSurface) {

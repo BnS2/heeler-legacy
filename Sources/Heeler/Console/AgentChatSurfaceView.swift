@@ -1,3 +1,4 @@
+import Combine
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -179,11 +180,26 @@ struct AgentChatSurfaceView: View {
         console.chatStore(for: agent, program: program)
     }
 
+    // iOS 16: @Observable tracked reads of `composer` and `chat` made in this body;
+    // ObservableObject does not for stores held by plain reference, so a sent message
+    // and new transcript rows waited for an unrelated redraw.
+    @State private var storeTick = 0
+    private var storeChanges: AnyPublisher<Void, Never> {
+        var sources = [composer.objectWillChange.map { _ in () }.eraseToAnyPublisher()]
+        if let chat {
+            sources.append(chat.objectWillChange.map { _ in () }.eraseToAnyPublisher())
+            sources.append(chat.blocked.objectWillChange.map { _ in () }.eraseToAnyPublisher())
+        }
+        return Publishers.MergeMany(sources).eraseToAnyPublisher()
+    }
+
     var body: some View {
+        let _ = storeTick
         GeometryReader { proxy in
             presentedSurface
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
         }
+        .onReceive(storeChanges) { storeTick &+= 1 }
         .confirmationDialog(
             switchQuestion?.title ?? "", isPresented: switchQuestionShown, titleVisibility: .visible,
             presenting: switchQuestion
@@ -1554,9 +1570,9 @@ struct AgentChatSurfaceView: View {
             headerSharesBar: headerSharesBar, usesVerticalToolbar: usesVerticalToolbar)
     }
 
-    private var terminalSurfaceSwitch: AgentDetailSurfaceSwitch {
-        AgentDetailSurfaceSwitch(current: .chat) { _ in showAgentTerminal() }
-    }
+    // iOS 16: no header toggle to the raw terminal; Chat does not see text typed there.
+    // The terminal stays reachable from Chat's own banners and menu.
+    private var terminalSurfaceSwitch: AgentDetailSurfaceSwitch? { nil }
 
     private var backHeaderActions: [AgentDetailHeaderAction] {
         var actions: [AgentDetailHeaderAction] = []

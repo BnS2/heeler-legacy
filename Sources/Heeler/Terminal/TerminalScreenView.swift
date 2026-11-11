@@ -883,6 +883,9 @@ final class HeelerTerminalView: UITerminalView, TerminalByteSink {
         target: self,
         action: #selector(handleHerdrPointerScrollGesture(_:)))
 
+    private lazy var keyboardTapGesture = UITapGestureRecognizer(
+        target: self, action: #selector(handleKeyboardTap(_:)))
+
     private lazy var zoomGesture = UIPinchGestureRecognizer(
         target: self,
         action: #selector(handleHerdrZoomGesture(_:)))
@@ -2195,6 +2198,26 @@ final class HeelerTerminalView: UITerminalView, TerminalByteSink {
 
         pointerScrollGesture.delegate = self
         addGestureRecognizer(pointerScrollGesture)
+
+        // Tap anywhere to type. Ghostty's own tap only raises the keyboard near
+        // the cursor row and sends a click in a TUI, so an iPad tap on a TUI
+        // never brought the keyboard up.
+        keyboardTapGesture.cancelsTouchesInView = false
+        keyboardTapGesture.delegate = Self.simultaneousGestures
+        addGestureRecognizer(keyboardTapGesture)
+    }
+
+    private static let simultaneousGestures = SimultaneousGestureDelegate()
+
+    private final class SimultaneousGestureDelegate: NSObject, UIGestureRecognizerDelegate {
+        func gestureRecognizer(
+            _ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+        ) -> Bool { true }
+    }
+
+    @objc private func handleKeyboardTap(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended, isLocalInputEnabled, !hasInlineSelection else { return }
+        requestKeyboard()
     }
 
     /// Ghostty ships its own pinch handler that mutates the surface font size

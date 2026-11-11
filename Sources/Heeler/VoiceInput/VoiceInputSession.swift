@@ -74,7 +74,7 @@ final class ComposerVoiceInput: ObservableObject {
     private let sleep: @Sendable (Duration) async throws -> Void
 
     init(
-        sendHold: Duration = .seconds(1),
+        sendHold: Duration = .milliseconds(400),
         sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
     ) {
         self.sendHold = sendHold
@@ -272,6 +272,8 @@ final class VoiceInputSession: ObservableObject {
         input.task = Task { [weak self, weak input] in
             guard let self else { return }
             let granted = await recorder.requestPermission()
+            // Audio session setup blocks the main thread; let the bar paint first.
+            try? await sleep(.milliseconds(60))
             guard let input, input.generation == generation else { return }
             beginRecording(input, granted: granted)
         }
@@ -364,22 +366,32 @@ final class VoiceInputSession: ObservableObject {
 
     private func upload(_ recording: VoiceRecording, for input: ComposerVoiceInput) {
         input.recording = recording
+        if settings.usesOnDevice {
+            run(for: input) { try await OnDeviceTranscriber.transcribe(wav: recording.audio) }
+            return
+        }
         guard let endpoint = settings.endpoint, settings.hasConsent(for: endpoint),
             let apiKey = settings.apiKey(for: endpoint)
         else {
             input.fail(.notSetUp)
             return
         }
-        let generation = input.begin(.transcribing)
         let request = VoiceTranscriptionRequest(
             endpoint: endpoint, apiKey: apiKey, audio: recording.audio,
             options: settings.options(for: endpoint), keywords: settings.keywords,
             prompt: settings.prompt)
         let transcribe = transcribe
+        run(for: input) { try await transcribe(request) }
+    }
+
+    private func run(
+        for input: ComposerVoiceInput, _ work: @escaping @Sendable () async throws -> String
+    ) {
+        let generation = input.begin(.transcribing)
         input.task = Task { [weak input] in
             let result: Result<String, any Error>
             do {
-                result = .success(try await transcribe(request))
+                result = .success(try await work())
             } catch {
                 result = .failure(error)
             }

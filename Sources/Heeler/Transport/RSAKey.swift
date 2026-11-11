@@ -11,6 +11,9 @@ struct RSAKey: Sendable {
     let publicKeyDER: Data
     let keySizeInBits: Int
 
+    /// Imported once: re-importing a 3072-bit key per signature is slow on older iPads.
+    /// SecKey is immutable and thread-safe.
+    nonisolated(unsafe) private let signingKey: SecKey
     private let exponent: Data
     private let modulus: Data
 
@@ -42,6 +45,7 @@ struct RSAKey: Sendable {
         self.privateKeyDER = privateKeyDER
         publicKeyDER = publicKeyData
         keySizeInBits = keySize
+        signingKey = privateKey
         exponent = components.exponent
         modulus = components.modulus
     }
@@ -83,16 +87,8 @@ struct RSAKey: Sendable {
     /// has no legacy ssh-rsa/SHA-1 fallback.
     func signature(for data: Data) throws -> Data {
         var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateWithData(
-            privateKeyDER as CFData,
-            [
-                kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-                kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
-                kSecAttrKeySizeInBits as String: keySizeInBits,
-            ] as CFDictionary,
-            &error
-        ), let signature = SecKeyCreateSignature(
-            privateKey,
+        guard let signature = SecKeyCreateSignature(
+            signingKey,
             .rsaSignatureMessagePKCS1v15SHA512,
             data as CFData,
             &error

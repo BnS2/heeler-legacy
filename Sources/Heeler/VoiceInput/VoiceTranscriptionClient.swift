@@ -1,4 +1,5 @@
 import Foundation
+import Speech
 
 /// One recording on its way to a speech service.
 struct VoiceTranscriptionRequest: Sendable {
@@ -268,5 +269,49 @@ struct VoiceTranscriptionClient: Sendable {
 
     private struct TranscriptBody: Decodable {
         let text: String
+    }
+}
+
+
+/// iOS 16: the iPad's own speech recognition (SFSpeechRecognizer), used in place of an
+/// uploaded recording. It prefers on-device recognition and, where the device or language
+/// has none, uses the system's own recognition service, as keyboard dictation does.
+enum OnDeviceTranscriber {
+    static func transcribe(wav: Data) async throws -> String {
+        let status = await withCheckedContinuation { (c: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
+            SFSpeechRecognizer.requestAuthorization { c.resume(returning: $0) }
+        }
+        guard status == .authorized else {
+            throw VoiceTranscriptionError.invalidSettings(
+                String(localized: "Heeler can't use speech recognition. Turn it on in Settings."))
+        }
+        guard let recognizer = SFSpeechRecognizer(locale: .current) ?? SFSpeechRecognizer(),
+            recognizer.isAvailable
+        else {
+            throw VoiceTranscriptionError.invalidSettings(
+                String(localized: "Speech recognition isn't available for this language right now."))
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("voice-\(UUID().uuidString).wav")
+        try wav.write(to: url, options: .completeFileProtection)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let request = SFSpeechURLRecognitionRequest(url: url)
+        request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
+        request.shouldReportPartialResults = false
+        let text: String = try await withCheckedThrowingContinuation { c in
+            var finished = false
+            recognizer.recognitionTask(with: request) { result, error in
+                guard !finished else { return }
+                if let result, result.isFinal {
+                    finished = true
+                    c.resume(returning: result.bestTranscription.formattedString)
+                } else if let error {
+                    finished = true
+                    c.resume(throwing: VoiceTranscriptionError.network(error.localizedDescription))
+                }
+            }
+        }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw VoiceTranscriptionError.emptyTranscript }
+        return trimmed
     }
 }

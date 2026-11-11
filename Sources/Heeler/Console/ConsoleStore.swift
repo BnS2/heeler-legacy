@@ -1954,6 +1954,9 @@ final class ConsoleStore: ObservableObject {
             return String(localized: "Reconnecting…")
         case .connected where hostsAwaitingFreshSnapshot.contains(hostID):
             return String(localized: "Updating session…")
+        case .suspended:
+            // iOS 16: a Host asleep after backgrounding showed no state at all.
+            return String(localized: "Paused")
         default:
             return nil
         }

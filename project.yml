@@ -128,6 +128,7 @@ targets:
         # Voice Input (ADR 0036) records only after a tap on the Composer's
         # mic, and uploads to the speech service the user set up.
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Heeler records your voice when you tap the microphone in the Composer, and sends the recording to the speech service you chose in Settings to turn it into text."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "Heeler turns what you say into text with the iPad's speech recognition when you tap the microphone in the Composer."
         # Only exempt encryption is used: standard, published algorithms in
         # SSH (the HeelerSSH package's libssh2/OpenSSL), OS-provided
         # CryptoKit, and the overlay networks' protocols (WireGuard in

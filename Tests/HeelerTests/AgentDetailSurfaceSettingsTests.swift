@@ -12,11 +12,11 @@ struct AgentDetailSurfaceSettingsTests {
         return (defaults, { defaults.removePersistentDomain(forName: suiteName) })
     }
 
-    @Test func defaultsToTheTerminal() throws {
+    @Test func defaultsToChat() throws {
         let (defaults, cleanup) = try makeDefaults()
         defer { cleanup() }
 
-        #expect(AgentDetailSurfaceSettings(defaults: defaults).preferred == .terminal)
+        #expect(AgentDetailSurfaceSettings(defaults: defaults).preferred == .chat)
     }
 
     @Test func chosenSurfaceIsRememberedAcrossLaunches() throws {
@@ -34,12 +34,12 @@ struct AgentDetailSurfaceSettingsTests {
         #expect(AgentDetailSurfaceSettings(defaults: defaults).preferred == .terminal)
     }
 
-    @Test func unknownStoredSurfaceFallsBackToTheTerminal() throws {
+    @Test func unknownStoredSurfaceFallsBackToChat() throws {
         let (defaults, cleanup) = try makeDefaults()
         defer { cleanup() }
         defaults.set("timeline", forKey: "agent.detail-surface")
 
-        #expect(AgentDetailSurfaceSettings(defaults: defaults).preferred == .terminal)
+        #expect(AgentDetailSurfaceSettings(defaults: defaults).preferred == .chat)
     }
 
     @Test func reselectingTheCurrentSurfaceWritesNothing() throws {
@@ -47,7 +47,7 @@ struct AgentDetailSurfaceSettingsTests {
         defer { cleanup() }
         let settings = AgentDetailSurfaceSettings(defaults: defaults)
 
-        settings.select(.terminal)
+        settings.select(.chat)
 
         #expect(defaults.object(forKey: "agent.detail-surface") == nil)
     }

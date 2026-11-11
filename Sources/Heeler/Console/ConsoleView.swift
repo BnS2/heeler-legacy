@@ -853,7 +853,11 @@ struct ConsoleView: View {
     /// Output starts below the detail's bar row, or below the whole bar
     /// while it carries the Show Sidebar button.
     private func detailTopInset(for tab: ConsoleTab) -> CGFloat {
-        splitVisibility(for: tab).isSidebarVisible == false ? detailBar.bottom : detailBar.top
+        // Before iPadOS 26 the bar is an opaque strip over the detail, not glass the
+        // output may run under, so output always starts below it.
+        let barIsGlass: Bool = if #available(iOS 26.0, *) { true } else { false }
+        return splitVisibility(for: tab).isSidebarVisible == false || !barIsGlass
+            ? detailBar.bottom : detailBar.top
     }
 
     /// One tab's split view. A split view instead of a plain stack for the

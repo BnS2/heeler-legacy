@@ -468,6 +468,30 @@ final class AttachTerminalStore: ObservableObject {
     private func start() {
         status = .connecting
         runTask = Task { await self.run() }
+        watchForStall()
+    }
+
+    /// iOS 16: an attach that is still `.connecting` after a while is cancelled and
+    /// started once more, which is what re-selecting the session in the sidebar did by hand.
+    private var stallRestartsLeft = 1
+    private var stallWatch: Task<Void, Never>?
+
+    private func watchForStall() {
+        stallWatch?.cancel()
+        guard stallRestartsLeft > 0 else { return }
+        stallWatch = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard let self, !Task.isCancelled, self.status == .connecting, !self.stopRequested,
+                let task = self.runTask
+            else { return }
+            self.stallRestartsLeft -= 1
+            task.cancel()
+            await task.value
+            // Cancelling ends the run as .ended (or as a reattach); only a clean
+            // end is restarted, so a real failure still shows its message.
+            guard !self.stopRequested, self.runTask == nil, case .ended = self.status else { return }
+            self.start()
+        }
     }
 
     /// One session lifetime: open at the current geometry, pump output until

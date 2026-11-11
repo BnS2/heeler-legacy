@@ -160,6 +160,7 @@ final class VoiceInputSettings: ObservableObject {
         static let builtInMicrophone = "voice-input-built-in-microphone"
         static let keywords = "voice-input-keywords"
         static let prompt = "voice-input-prompt"
+        static let onDevice = "voice-input-on-device"
     }
 
     /// Nil while Voice Input is off.
@@ -179,6 +180,9 @@ final class VoiceInputSettings: ObservableObject {
     /// What recordings are about, sent with each one. One for every
     /// service; empty when unset.
     @Published private(set) var prompt: String
+    /// iOS 16: transcribe with the iPad's own speech recognition, with no service or key.
+    /// On unless turned off.
+    @Published private(set) var usesOnDevice: Bool
 
     private nonisolated(unsafe) let defaults: UserDefaults
     private let secrets: any SecretStore
@@ -200,6 +204,7 @@ final class VoiceInputSettings: ObservableObject {
         alwaysUsesBuiltInMicrophone = defaults.bool(forKey: Key.builtInMicrophone)
         keywords = defaults.stringArray(forKey: Key.keywords) ?? []
         prompt = defaults.string(forKey: Key.prompt) ?? ""
+        usesOnDevice = defaults.object(forKey: Key.onDevice) as? Bool ?? true
         // Migrate the legacy toggle once, even while the Custom service is off.
         if defaults.object(forKey: Key.requestOptions) == nil {
             if defaults.bool(forKey: Key.customLanguage), let endpoint = VoiceInputService.custom.endpoint(custom: custom) {
@@ -221,8 +226,14 @@ final class VoiceInputSettings: ObservableObject {
 
     /// Whether a recording can go out now.
     var isReady: Bool {
+        if usesOnDevice { return true }
         guard let endpoint else { return false }
         return hasKey(for: endpoint) && hasConsent(for: endpoint)
+    }
+
+    func setUsesOnDevice(_ value: Bool) {
+        usesOnDevice = value
+        defaults.set(value, forKey: Key.onDevice)
     }
 
     func options(for endpoint: VoiceInputEndpoint) -> VoiceInputRequestOptions {

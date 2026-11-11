@@ -191,6 +191,10 @@ final class HerdrCoreConsoleProjection: ConsoleHostProjection {
         if case .failed = status {
             beginNewActivation()
             await session.retry()
+        } else if case .reconnecting = status {
+            // iOS 16: coming back is the moment to try now, not after the backoff timer.
+            beginNewActivation()
+            await session.retry()
         } else {
             await session.revalidate()
             await checkDesktopApp()

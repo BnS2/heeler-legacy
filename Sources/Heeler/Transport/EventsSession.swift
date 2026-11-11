@@ -9,7 +9,7 @@ struct ReconnectPolicy: Sendable, Equatable {
     var maxDelay: Duration
 
     static let `default` = ReconnectPolicy(
-        initialDelay: .seconds(1), multiplier: 2, maxDelay: .seconds(30))
+        initialDelay: .seconds(1), multiplier: 2, maxDelay: .seconds(8))  // iOS 16: was 30s; a flaky link sat on "Connecting" too long
 
     /// The delay before reconnect attempt `attempt` (1-based): the initial
     /// delay grown by `multiplier` per prior failure, clamped at `maxDelay`.

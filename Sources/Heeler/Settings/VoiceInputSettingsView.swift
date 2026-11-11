@@ -30,6 +30,13 @@ struct VoiceInputSettingsView: View {
     var body: some View {
         Form {
             Section {
+                Toggle("Use Apple speech recognition", isOn: Binding(
+                    get: { settings.usesOnDevice }, set: { settings.setUsesOnDevice($0) }))
+            } footer: {
+                Text("Uses on-device recognition when available. Otherwise, audio is sent to Apple for recognition. No API key is needed. Turn this off to use a speech service you set up.")
+            }
+            if !settings.usesOnDevice {
+            Section {
                 Picker("Service", selection: $connection.service) {
                     Text("Off").tag(VoiceInputService?.none)
                     ForEach(VoiceInputService.allCases) { @Sendable service in
@@ -64,6 +71,7 @@ struct VoiceInputSettingsView: View {
                 if #available(iOS 26.0, *) {
                     microphoneSection
                 }
+            }
             }
         }
         .onChangeCompat(of: keywords) { _, _ in syncVocabulary() }
