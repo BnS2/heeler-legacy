@@ -5,9 +5,12 @@ All notable changes to Heeler are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Entries reference the pull request that made the change.
 
-## Heeler Legacy 0.1.0 (pre-release)
+## Heeler Legacy 0.1.1 (pre-release)
 
 - Fix duplicate sidebar toggle icons on iOS 16 by keeping the system toggle.
+
+## Heeler Legacy 0.1.0 (pre-release)
+
 - Lower the app minimum to iOS 16, with compatibility fallbacks and corrected
   foreground updates.
 - Add Apple speech recognition, Chat as the default view, terminal tap to type,
