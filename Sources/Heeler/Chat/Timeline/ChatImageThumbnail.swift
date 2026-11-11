@@ -23,7 +23,7 @@ struct ChatImageThumbnail: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .onAppear { thumbnails?.appear(path) }
             .onDisappear { thumbnails?.disappear(path) }
-            .onChange(of: path) { old, new in
+            .onChangeCompat(of: path) { old, new in
                 thumbnails?.disappear(old)
                 thumbnails?.appear(new)
             }

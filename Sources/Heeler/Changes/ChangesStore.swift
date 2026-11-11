@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import UIKit
 
 /// One Checkout's Changes document: the Checkout containing an Agent's
@@ -9,8 +9,7 @@ import UIKit
 /// discards. Status edges refresh the list; lazy file reads stay
 /// independent.
 @MainActor
-@Observable
-final class ChangesStore {
+final class ChangesStore: ObservableObject {
     enum Phase: Equatable {
         /// No read has completed yet.
         case loading
@@ -53,37 +52,37 @@ final class ChangesStore {
 
     static let cleanMessage = String(localized: "No uncommitted changes")
 
-    private(set) var phase: Phase = .loading
+    @Published private(set) var phase: Phase = .loading
     /// A read is running while content from an earlier read stays on screen.
-    private(set) var isRefreshing = false
+    @Published private(set) var isRefreshing = false
     /// Where the Agent's directory sits inside the Checkout, raw bytes,
     /// from the latest successful read; empty at the top level.
-    private(set) var directoryPrefix = Data()
+    @Published private(set) var directoryPrefix = Data()
     /// A timed-out refresh keeps the last document, identity and scroll position.
-    private(set) var timedOutKeepingContent = false
-    private(set) var readAt: Date?
-    @ObservationIgnored let autoRefresh: ChangesAutoRefresh
-    @ObservationIgnored private let gate: GitExecGate?
-    @ObservationIgnored private let now: @MainActor () -> Date
-    @ObservationIgnored private let announce: @MainActor (String) -> Void
-    @ObservationIgnored var activeRead: Task<Void, Never>?
-    @ObservationIgnored var readID = UUID()
+    @Published private(set) var timedOutKeepingContent = false
+    @Published private(set) var readAt: Date?
+    let autoRefresh: ChangesAutoRefresh
+    private let gate: GitExecGate?
+    private let now: @MainActor () -> Date
+    private let announce: @MainActor (String) -> Void
+    var activeRead: Task<Void, Never>?
+    var readID = UUID()
     /// The read that has entered the Transport, which an Agent leaving the
     /// catalog lets finish rather than stacking another git process.
-    @ObservationIgnored var dispatchedReadID: UUID?
+    var dispatchedReadID: UUID?
     /// The list's current following, so a stale one never stops it.
-    @ObservationIgnored var rowFollowID: UUID?
+    var rowFollowID: UUID?
     /// Gates "Checkout Changes updated."; false for a list row's store,
     /// whose totals VoiceOver reads with the row rather than hearing about.
-    @ObservationIgnored var announcesAutomaticUpdates = true
+    var announcesAutomaticUpdates = true
     /// True while this store's automatic reads should wait: for a list
     /// row's store, while no row shows the Agent, or while open Changes of
     /// the Checkout it would read are reading it in its place. A waiting
     /// read runs once the row shows again or those Changes close.
-    @ObservationIgnored var defersAutomaticRefresh: (@MainActor () -> Bool)?
+    var defersAutomaticRefresh: (@MainActor () -> Bool)?
     /// Told of each document this store takes, from its own read or from
     /// another store's.
-    @ObservationIgnored var onLoaded: (@MainActor (CheckoutChanges) -> Void)?
+    var onLoaded: (@MainActor (CheckoutChanges) -> Void)?
 
     var freshness: ChangesFreshness? {
         guard case .loaded = phase, let readAt,
@@ -102,19 +101,19 @@ final class ChangesStore {
     /// failed read keeps them until the next success.
     let untrackedDirectories: UntrackedDirectoryExpansions
 
-    @ObservationIgnored private let directory: @MainActor () -> String?
-    @ObservationIgnored private let read:
+    private let directory: @MainActor () -> String?
+    private let read:
         @Sendable (ChangesReadRequest) async throws -> CheckoutChangesRead
-    @ObservationIgnored private var lastDirectory: String?
+    private var lastDirectory: String?
     /// The directory whose read the loaded document is.
-    @ObservationIgnored private var readDirectory: String?
-    @ObservationIgnored private var hasRead = false
+    private var readDirectory: String?
+    private var hasRead = false
 
     let fileDiff: FileDiffPresenter
 
-    @ObservationIgnored var insertReference: (@MainActor (String) -> Void)?
-    @ObservationIgnored var copyToPasteboard: (@MainActor (String) -> Void)?
-    @ObservationIgnored var referencesFollowAgentDirectory = true
+    var insertReference: (@MainActor (String) -> Void)?
+    var copyToPasteboard: (@MainActor (String) -> Void)?
+    var referencesFollowAgentDirectory = true
 
     /// `directory` is asked on every read, so an Agent that moved to another
     /// Checkout is read where it is now.

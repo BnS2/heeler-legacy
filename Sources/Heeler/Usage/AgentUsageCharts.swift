@@ -107,17 +107,28 @@ struct AgentUsageDailyChart: View {
                 }
             }
             if let selectedDate, let selection {
-                RuleMark(x: .value("Day", selectedDate, unit: .day))
-                    .foregroundStyle(Color.secondary.opacity(0.6))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
-                    // Above the plot while the chart is held; a pinned day
-                    // reads beside its rule, inside the plot.
-                    .annotation(
-                        position: pinsSelection ? .leading : .top, alignment: .top, spacing: pinsSelection ? 8 : 4,
-                        overflowResolution: .init(x: .fit(to: .chart), y: pinsSelection ? .fit(to: .chart) : .disabled)
-                    ) {
-                        AgentUsageDayReadout(scope: scope, day: selection, showsTotal: pinsSelection)
-                    }
+                if #available(iOS 17, *) {
+                    RuleMark(x: .value("Day", selectedDate, unit: .day))
+                        .foregroundStyle(Color.secondary.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                        // Above the plot while the chart is held; a pinned day
+                        // reads beside its rule, inside the plot.
+                        .annotation(
+                            position: pinsSelection ? .leading : .top, alignment: .top, spacing: pinsSelection ? 8 : 4,
+                            overflowResolution: .init(x: .fit(to: .chart), y: pinsSelection ? .fit(to: .chart) : .disabled)
+                        ) {
+                            AgentUsageDayReadout(scope: scope, day: selection, showsTotal: pinsSelection)
+                        }
+                } else {
+                    RuleMark(x: .value("Day", selectedDate, unit: .day))
+                        .foregroundStyle(Color.secondary.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                        .annotation(
+                            position: pinsSelection ? .leading : .top, alignment: .top, spacing: pinsSelection ? 8 : 4
+                        ) {
+                            AgentUsageDayReadout(scope: scope, day: selection, showsTotal: pinsSelection)
+                        }
+                }
             }
         }
         .chartForegroundStyleScale(domain: programNames, range: programColors)
@@ -195,7 +206,7 @@ private struct AgentUsageChartSelection: ViewModifier {
                 GeometryReader { geometry in
                     Rectangle().fill(.clear).contentShape(.rect)
                         .onTapGesture { location in
-                            guard let plot = proxy.plotFrame else { return }
+                            let plot = proxy.plotAreaFrame
                             let x = location.x - geometry[plot].origin.x
                             guard let date: Date = proxy.value(atX: x) else { return }
                             let day = Calendar.gmt.startOfDay(for: date)
@@ -205,7 +216,7 @@ private struct AgentUsageChartSelection: ViewModifier {
                 }
             }
         } else {
-            content.chartXSelection(value: $selection)
+            if #available(iOS 17, *) { content.chartXSelection(value: $selection) } else { content }
         }
     }
 }

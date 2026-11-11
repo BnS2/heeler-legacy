@@ -232,7 +232,7 @@ struct AgentComposerLinkPresentation: Equatable {
 /// send terminal sequences through Attach. While the Agent is Working and
 /// the draft is blank, Send becomes Stop (`AgentComposerStopStore`).
 struct AgentComposerView: View {
-    let store: AgentComposerStore
+    @ObservedObject var store: AgentComposerStore
     let status: AgentStatus
     /// Read-only projection of the Host's own connection telemetry; nil
     /// whenever there is nothing proven to show.
@@ -300,7 +300,7 @@ struct AgentComposerView: View {
     var offersSend = true
     /// The app's microphone owner; absent in previews and tests, which
     /// leaves the mic out.
-    @Environment(VoiceInputSession.self) private var voiceInput: VoiceInputSession?
+    @Environment(\.voiceInputSession) private var voiceInput
     @State private var isVoiceSetupPresented = false
     @State private var isInputFocused = false
     /// An explicit dismissal hides suggestions for the current trigger token;
@@ -394,14 +394,14 @@ struct AgentComposerView: View {
             setKeyboardPresentation(.system)
             isInputFocused = true
         }
-        .onChange(of: focusRequest) { _, _ in
+        .onChangeCompat(of: focusRequest) { _, _ in
             // A card still in the input's place keeps the keyboard down.
             if inputReplacement == nil { isInputFocused = true }
         }
-        .onChange(of: isInputFocused) { _, isFocused in
+        .onChangeCompat(of: isInputFocused) { _, isFocused in
             keyboardPresentationFollowsFocus(isFocused)
         }
-        .onChange(of: store.draft) { _, _ in
+        .onChangeCompat(of: store.draft) { _, _ in
             if commandMenu != nil {
                 if commandSuggestions == nil { isSuggestionsDismissed = false }
                 return
@@ -671,7 +671,7 @@ struct AgentComposerView: View {
                     .accessibilityLabel("More")
             }
             .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
+            .buttonBorderShapeCircleCompat()
             .tint(secondaryActionTint)
             .frame(minWidth: 44, minHeight: 44)
             .accessibilityHint("Opens Agent actions")
@@ -762,7 +762,7 @@ struct AgentComposerView: View {
                 .accessibilityLabel("Add")
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
+        .buttonBorderShapeCircleCompat()
         .tint(secondaryActionTint)
         .frame(minWidth: 44, minHeight: 44)
         .accessibilityHint("Adds an image or file to the draft")
@@ -990,7 +990,7 @@ struct AgentComposerView: View {
 /// sent. Renders nothing when a loaded catalogue has no match, so prose that
 /// happens to contain a prefix is not nagged.
 private struct AgentComposerSkillSuggestions: View {
-    let skills: SkillsPaneStore
+    @ObservedObject var skills: SkillsPaneStore
     let trigger: SkillSuggestionTrigger
     let onSelect: (AgentSkill) -> Void
     let onDismiss: () -> Void
@@ -1037,7 +1037,7 @@ private struct AgentComposerSkillSuggestions: View {
                         }
                     }
                     .frame(height: min(listHeight, Self.maximumListHeight))
-                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollBounceBasedOnSizeCompat()
                     Divider()
                 }
                 .accessibilityElement(children: .contain)
@@ -1075,7 +1075,7 @@ private struct AgentComposerSkillSuggestions: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(skill.command)
                     .font(.subheadline.weight(.medium))
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 if let description = skill.description {
@@ -1544,7 +1544,7 @@ final class AgentComposerUITextView: UITextView {
         smartQuotesType = .no
         smartDashesType = .no
         smartInsertDeleteType = .no
-        inlinePredictionType = .no
+        if #available(iOS 17, *) { inlinePredictionType = .no }
     }
 
     private func installKeyboardObservers() {
@@ -1740,7 +1740,7 @@ struct AgentToolsKeyboard: View {
     /// The screen routes authored text according to the active input mode.
     let insertText: (String) -> Void
     let context: TerminalKeysContext
-    let keyboardControl: TerminalKeyboardControl
+    @ObservedObject var keyboardControl: TerminalKeyboardControl
     let inputMode: AgentInputMode
     let height: CGFloat
     let quickKeysEnabled: Bool
@@ -1800,7 +1800,7 @@ struct AgentToolsKeyboard: View {
         .frame(height: height)
         .clipped()
         .background(Color(uiColor: .systemBackground).ignoresSafeArea(edges: .bottom))
-        .onChange(of: selectedTab) { _, tab in
+        .onChangeCompat(of: selectedTab) { _, tab in
             guard tab == .skills, let skills = context.skills else { return }
             Task { await skills.store.loadIfNeeded() }
         }

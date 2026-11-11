@@ -231,7 +231,7 @@ private struct OverlayPeerChoiceRow: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(.fill.tertiary, in: .capsule)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
             }
             if isChosen {
                 Image(systemName: "checkmark")

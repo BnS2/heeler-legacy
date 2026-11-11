@@ -197,7 +197,7 @@ struct ConsoleHostIssuesSheet<Detail: View & SendableMetatype>: View {
                 }
             }
             // Rows start under the title, not a section header's gap below.
-            .contentMargins(.top, 4, for: .scrollContent)
+            .contentMarginsTopCompat(4)
             .consoleSheetPage()
             .navigationTitle(ConsoleHostIssueSummary(issues: issues)?.title ?? String(localized: "Hosts"))
             .navigationBarTitleDisplayMode(.inline)
@@ -213,7 +213,7 @@ struct ConsoleHostIssuesSheet<Detail: View & SendableMetatype>: View {
         }
         .modifier(ConsoleStatusSheetPresentationModifier(presentation: sheetPresentation))
         // A Host that connects again has nothing left to explain.
-        .onChange(of: explained) { _, explained in
+        .onChangeCompat(of: explained) { _, explained in
             path.removeAll { !explained.contains($0) }
         }
     }

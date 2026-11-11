@@ -8,6 +8,7 @@ import WidgetKit
 /// arrive in the sender's pin-aware order and are rendered as given.
 /// Agent rows deep-link to their detail while
 /// the surrounding chrome opens the Console.
+@available(iOS 16.2, *)
 struct AgentLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: AgentActivityAttributes.self) { context in
@@ -95,6 +96,7 @@ enum AgentActivitySemanticStyle {
 
 // MARK: - Lock screen
 
+@available(iOS 16.2, *)
 private struct AgentActivityLockScreenContainer: View {
     let presentation: AgentActivityPresentation
     let hostID: String
@@ -200,6 +202,7 @@ struct AgentActivityLockScreenView: View {
 
 /// The island speaks in status tokens: a glyph whose shape names the status,
 /// then that status's count. The most urgent status leads; the others trail.
+@available(iOS 16.1, *)
 enum AgentActivityIsland {
     static func make(presentation: AgentActivityPresentation, hostID: String) -> DynamicIsland {
         let counts = presentation.counts

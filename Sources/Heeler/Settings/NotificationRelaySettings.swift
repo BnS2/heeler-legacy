@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The app-side custom Push Relay base URL (#76, ADR 0008). A self-builder who
 /// ships their own bundle id and APNs key can point every Host's plugin at
@@ -12,13 +12,12 @@ import Observation
 /// entry yields no `URL`, so a typo never lands on a Host, and the settings
 /// screen can flag it instead.
 @MainActor
-@Observable
-final class NotificationRelaySettings {
+final class NotificationRelaySettings: ObservableObject {
     private static let defaultsKey = "notification-relay-url"
 
     /// The raw text the user typed, persisted verbatim so the field round-trips
     /// (including an in-progress typo the user is still editing).
-    var rawValue: String {
+    @Published var rawValue: String {
         didSet {
             let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
@@ -29,7 +28,7 @@ final class NotificationRelaySettings {
         }
     }
 
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

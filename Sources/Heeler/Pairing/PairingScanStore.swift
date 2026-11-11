@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// User-facing outcome of a failed pairing attempt, classified per ceremony
 /// step (ADR 0007) so the copy says whether to rescan, fix the network, or
@@ -25,40 +25,39 @@ struct PairingFailure: Equatable, Sendable {
 /// in the view layer; everything downstream of the scanned string is
 /// testable here with scripted connector fakes.
 @MainActor
-@Observable
-final class PairingScanStore {
+final class PairingScanStore: ObservableObject {
     /// Set once a scan parses; further scans are ignored until `rescan()`.
-    private(set) var pairingCode: PairingCode?
+    @Published private(set) var pairingCode: PairingCode?
     /// User-facing copy for the last failed scan, per the pairing failure
     /// taxonomy's parse step. Cleared by a successful scan or `rescan()`.
-    private(set) var scanFailureMessage: String?
+    @Published private(set) var scanFailureMessage: String?
     /// True while a ceremony attempt is in flight.
-    private(set) var isPairing = false
+    @Published private(set) var isPairing = false
     /// The ceremony step currently underway, for progress UI.
-    private(set) var step: PairingStep?
+    @Published private(set) var step: PairingStep?
     /// The last attempt's failure, with its recovery options.
-    private(set) var failure: PairingFailure?
+    @Published private(set) var failure: PairingFailure?
     /// The persisted Host, set only after the verified reconnect succeeded.
     /// The view hands it to the same preflight a manually added Host enters.
-    private(set) var pairedHost: Host?
+    @Published private(set) var pairedHost: Host?
 
-    @ObservationIgnored private let catalog: HostStore
-    @ObservationIgnored private let connector: any PairingConnector
-    @ObservationIgnored private let knownHosts: any KnownHostsStore
-    @ObservationIgnored private let credentials: HostCredentialsProvider
-    @ObservationIgnored private let now: @Sendable () -> Date
+    private let catalog: HostStore
+    private let connector: any PairingConnector
+    private let knownHosts: any KnownHostsStore
+    private let credentials: HostCredentialsProvider
+    private let now: @Sendable () -> Date
     /// The code the next attempt will use: the scanned code, except after a
     /// verify-step failure, where the Bootstrap Key is dropped — Enrollment
     /// already took effect, so only the Device Key reconnect remains.
-    @ObservationIgnored private var attemptCode: PairingCode?
+    private var attemptCode: PairingCode?
     /// True once a bootstrap ceremony reached Enrollment and we stripped the
     /// Bootstrap Key from `attemptCode`. A later verify failure then carries a
     /// bootstrap-less `attemptCode`, but the device really was enrolled, so
     /// this keeps the enrolled-then-unverified copy instead of regressing to
     /// the config-only "add your authorized_keys line" guidance.
-    @ObservationIgnored private var enrolledViaBootstrap = false
+    private var enrolledViaBootstrap = false
     /// Invalidates step callbacks still in flight from earlier attempts.
-    @ObservationIgnored private var attemptGeneration = 0
+    private var attemptGeneration = 0
 
     init(
         catalog: HostStore,

@@ -20,9 +20,9 @@ extension View {
 }
 
 private struct AppAppearanceModifier: ViewModifier {
-    let appearance: AppAppearanceSettings
-    let themes: TerminalThemeSettings
-    @State private var scene = SceneAppearance()
+    @ObservedObject var appearance: AppAppearanceSettings
+    @ObservedObject var themes: TerminalThemeSettings
+    @StateObject private var scene = SceneAppearance()
 
     func body(content: Content) -> some View {
         let themeAppearance = appearance.preferredColorScheme ?? scene.system
@@ -30,7 +30,7 @@ private struct AppAppearanceModifier: ViewModifier {
         content
             .environment(\.themeAppearance, themeAppearance)
             .environment(\.themeColors, ThemeColors(themes: themes, appearance: themeAppearance))
-            .onChange(of: drawn, initial: true) { _, drawn in scene.draw(drawn) }
+            .onChangeCompat(of: drawn, initial: true) { _, drawn in scene.draw(drawn) }
             .background {
                 WindowReader { scene.attach($0) }
                     .allowsHitTesting(false)
@@ -44,12 +44,11 @@ private struct AppAppearanceModifier: ViewModifier {
 /// window's own, not SwiftUI's `preferredColorScheme`, which overrides the
 /// whole scene and would hide the system's appearance from it.
 @MainActor
-@Observable
-final class SceneAppearance {
-    private(set) var system: ColorScheme
-    @ObservationIgnored private weak var window: UIWindow?
-    @ObservationIgnored private var drawn: ColorScheme?
-    @ObservationIgnored private var registration: (any UITraitChangeRegistration)?
+final class SceneAppearance: ObservableObject {
+    @Published private(set) var system: ColorScheme
+    private weak var window: UIWindow?
+    private var drawn: ColorScheme?
+    private var registration: Any?
 
     init() {
         system = Self.colorScheme(of: UITraitCollection.current)
@@ -61,9 +60,12 @@ final class SceneAppearance {
         guard window !== self.window, let scene = window.windowScene else { return }
         self.window = window
         applyDrawn()
-        registration = scene.registerForTraitChanges([UITraitUserInterfaceStyle.self]) {
-            [weak self] (scene: UIWindowScene, _: UITraitCollection) in
-            self?.readSystem(scene.traitCollection)
+        // iOS 16: live system-appearance changes need iOS 17 trait registration.
+        if #available(iOS 17, *) {
+            registration = scene.registerForTraitChanges([UITraitUserInterfaceStyle.self]) {
+                [weak self] (scene: UIWindowScene, _: UITraitCollection) in
+                self?.readSystem(scene.traitCollection)
+            }
         }
         Task { @MainActor [weak self] in self?.readSystem(scene.traitCollection) }
     }

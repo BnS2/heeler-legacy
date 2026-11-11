@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Console's bottom tabs (#316). Hosts is Host management, the screen
 /// the toolbar's Hosts button used to present, and Settings the sheet its
@@ -334,17 +334,16 @@ extension TerminalListProjection {
 /// Host sections. Like the Agents tab's store, collapsed ids outlive a Host
 /// disconnecting so a reconnect restores the choice.
 @MainActor
-@Observable
-final class TerminalListPresentationStore {
+final class TerminalListPresentationStore: ObservableObject {
     private static let modeDefaultsKey = "terminal-list.presentation-mode"
     private static let collapsedWorkspacesDefaultsKey = "terminal-list.collapsed-workspaces"
     private static let collapsedHostsDefaultsKey = "terminal-list.collapsed-hosts"
 
-    private(set) var mode: TerminalListPresentationMode
-    private(set) var collapsedWorkspaces: Set<TerminalWorkspaceGroup.ID>
-    private(set) var collapsedHosts: Set<Host.ID>
+    @Published private(set) var mode: TerminalListPresentationMode
+    @Published private(set) var collapsedWorkspaces: Set<TerminalWorkspaceGroup.ID>
+    @Published private(set) var collapsedHosts: Set<Host.ID>
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

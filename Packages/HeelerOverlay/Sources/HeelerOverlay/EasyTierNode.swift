@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 #if canImport(CEasyTier)
 import CEasyTier

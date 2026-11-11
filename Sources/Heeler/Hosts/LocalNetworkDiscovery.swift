@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import Network
-import Observation
 
 /// A machine found on the local network by Bonjour. It names the service,
 /// not an address: the address is resolved only when the user picks it.
@@ -326,24 +326,23 @@ final class ResumeGate: @unchecked Sendable {
 
 /// State of the "Find on Local Network" sheet.
 @MainActor
-@Observable
-final class LocalMachinePickerModel {
-    private(set) var machines: [DiscoveredMachine] = []
+final class LocalMachinePickerModel: ObservableObject {
+    @Published private(set) var machines: [DiscoveredMachine] = []
     /// False once the search has failed or stopped.
-    private(set) var isSearching = false
-    private(set) var searchError: LocalDiscoveryError?
+    @Published private(set) var isSearching = false
+    @Published private(set) var searchError: LocalDiscoveryError?
     /// Set while the browser waits (no network, Local Network prompt);
     /// the search goes on and clears it.
-    private(set) var waitingHint: LocalDiscoveryError?
+    @Published private(set) var waitingHint: LocalDiscoveryError?
     /// The row being resolved.
-    private(set) var resolvingID: String?
-    private(set) var resolveError: LocalDiscoveryError?
+    @Published private(set) var resolvingID: String?
+    @Published private(set) var resolveError: LocalDiscoveryError?
 
     private let browser: any LocalServiceBrowsing
-    private var searchTask: Task<Void, Never>?
-    private var resolveTask: Task<Void, Never>?
+    @Published private var searchTask: Task<Void, Never>?
+    @Published private var resolveTask: Task<Void, Never>?
     /// Bumped by `stop()`, so a task that outlives it cannot write state.
-    private var generation = 0
+    @Published private var generation = 0
 
     init(browser: any LocalServiceBrowsing = BonjourServiceBrowser()) {
         self.browser = browser

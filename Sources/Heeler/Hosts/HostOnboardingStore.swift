@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// A verified mismatch awaiting the user's explicit decision to replace the
 /// trusted pin. Merely observing a mismatch never mutates the known-hosts store.
@@ -54,8 +54,7 @@ struct HostOnboardingDependencies: Sendable {
 /// Host added unconfirmed first detects which servers it runs and has the user
 /// confirm one kind, then runs that kind's checks (ADR 0031).
 @MainActor
-@Observable
-final class HostOnboardingStore {
+final class HostOnboardingStore: ObservableObject {
     enum Phase: Equatable {
         case idle
         case running
@@ -69,65 +68,65 @@ final class HostOnboardingStore {
         case failed(HeelerPluginActionFailure)
     }
 
-    private(set) var phase: Phase = .idle
+    @Published private(set) var phase: Phase = .idle
     /// Set while the transport waits on the user's first-connect trust
     /// decision; the UI renders it as the fingerprint confirmation sheet.
-    private(set) var pendingFingerprint: HostKeyCandidate?
+    @Published private(set) var pendingFingerprint: HostKeyCandidate?
     /// Set only after a hard-failed mismatch, the Host's or a Jump Host's,
     /// for the UI's explicit re-trust flow. The old pin remains
     /// authoritative until the user confirms.
-    private(set) var pendingHostKeyReplacement: HostKeyReplacement?
-    private(set) var report: PreflightReport?
-    private(set) var serverInfo: ServerInfo?
-    private(set) var availableSessions: [HerdrSession] = []
-    private(set) var sessionDiscoveryError: String?
+    @Published private(set) var pendingHostKeyReplacement: HostKeyReplacement?
+    @Published private(set) var report: PreflightReport?
+    @Published private(set) var serverInfo: ServerInfo?
+    @Published private(set) var availableSessions: [HerdrSession] = []
+    @Published private(set) var sessionDiscoveryError: String?
     /// The Heeler plugin as the preflight connection found it. Read after a
     /// passing ping, so an unreachable Host reports `.unavailable`.
-    private(set) var pluginStatus: HeelerPluginStatus = .checking
-    private(set) var pluginAction: PluginActionState = .idle
+    @Published private(set) var pluginStatus: HeelerPluginStatus = .checking
+    @Published private(set) var pluginAction: PluginActionState = .idle
     /// Set when the last run stopped at an Overlay Network that needs an
     /// interactive sign-in; the UI offers to open it.
-    private(set) var overlayLoginURL: URL?
+    @Published private(set) var overlayLoginURL: URL?
     /// What an unconfirmed Host's one detection exec found.
-    private(set) var detection: ServerKindDetection?
+    @Published private(set) var detection: ServerKindDetection?
     /// Why a reached Host could not be read, which leaves its kind to the user.
-    private(set) var detectionFailure: String?
+    @Published private(set) var detectionFailure: String?
     /// Why the last confirmation was refused, for the user to read.
-    private(set) var confirmationRefusal: String?
+    @Published private(set) var confirmationRefusal: String?
     /// What the locator found on a core Host the last checks read as not running.
-    private var notRunningCore: HerdrCoreLocator.Location?
+    @Published private var notRunningCore: HerdrCoreLocator.Location?
     /// Set from the user's request until they answer it.
-    private(set) var coreStartConfirmation: CoreStartConfirmation?
-    private(set) var coreStart: CoreStartState = .idle
+    @Published private(set) var coreStartConfirmation: CoreStartConfirmation?
+    @Published private(set) var coreStart: CoreStartState = .idle
 
     /// A herdr-core Host's Host Helper, read with its checks.
-    private(set) var hostHelper: HostHelperStore?
+    @Published private(set) var hostHelper: HostHelperStore?
 
-    private(set) var host: Host
+    @Published private(set) var host: Host
 
-    @ObservationIgnored private let connector: any TransportConnector
-    @ObservationIgnored private let knownHosts: any KnownHostsStore
-    @ObservationIgnored private let credentials: HostCredentialsProvider
-    @ObservationIgnored private let overlays: OverlayNetworkRuntime
+    private let connector: any TransportConnector
+    private let knownHosts: any KnownHostsStore
+    private let credentials: HostCredentialsProvider
+    private let overlays: OverlayNetworkRuntime
     /// The transport deliberately has no confirmation timeout (#2); the UI
     /// layer owns it (spec #20). An unanswered candidate is declined.
-    @ObservationIgnored private let fingerprintTimeout: Duration
-    @ObservationIgnored private let coreHolderRestart: HerdrCoreHolderRestartPolicy
-    @ObservationIgnored private let sleep: HerdrCoreHostSession.Sleep
-    @ObservationIgnored private var fingerprintDecision: CheckedContinuation<Bool, Never>?
-    @ObservationIgnored private var fingerprintTimeoutTask: Task<Void, Never>?
+    private let fingerprintTimeout: Duration
+    private let coreHolderRestart: HerdrCoreHolderRestartPolicy
+    private let sleep: HerdrCoreHostSession.Sleep
+    private var fingerprintDecision: CheckedContinuation<Bool, Never>?
+    private var fingerprintTimeoutTask: Task<Void, Never>?
     /// Identifies the prompt `fingerprintDecision` answers.
-    @ObservationIgnored private var fingerprintPrompt: UUID?
-    @ObservationIgnored private var checks: Task<Void, Never>?
+    private var fingerprintPrompt: UUID?
+    private var checks: Task<Void, Never>?
     /// Identifies the run whose trust prompts may still be shown.
-    @ObservationIgnored private var currentRun = UUID()
-    @ObservationIgnored private let hostHelperDidChange: @MainActor () -> Void
-    @ObservationIgnored private let noteWindowsCore: @MainActor (Host.ID) -> Void
-    @ObservationIgnored private let hostHelperHealthGap: @Sendable () async throws -> Void
-    @ObservationIgnored private let harnessEdits: HarnessConfigEditStore?
+    private var currentRun = UUID()
+    private let hostHelperDidChange: @MainActor () -> Void
+    private let noteWindowsCore: @MainActor (Host.ID) -> Void
+    private let hostHelperHealthGap: @Sendable () async throws -> Void
+    private let harnessEdits: HarnessConfigEditStore?
     /// A Mac's second health read, which outlives the run that began it and owns
     /// that run's connection until it ends.
-    @ObservationIgnored private(set) var hostHelperConfirmation: Task<Void, Never>?
+    private(set) var hostHelperConfirmation: Task<Void, Never>?
 
     init(
         host: Host,

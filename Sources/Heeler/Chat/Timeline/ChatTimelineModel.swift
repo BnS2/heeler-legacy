@@ -1,14 +1,13 @@
+import Combine
 import Foundation
-import Observation
 
 /// Builds the timeline's rows off the main actor and publishes them in
 /// order. A request that arrives while rows are being built waits, and a
 /// newer one replaces it, so the list only moves forward and never shows a
 /// state older than one it already showed.
 @MainActor
-@Observable
-final class ChatTimelineModel {
-    private(set) var state = ChatTimelineState.empty
+final class ChatTimelineModel: ObservableObject {
+    @Published private(set) var state = ChatTimelineState.empty
 
     private struct Request {
         let conversation: Int
@@ -19,10 +18,10 @@ final class ChatTimelineModel {
         let isReady: Bool
     }
 
-    @ObservationIgnored private let builder = ChatRowBuilder()
-    @ObservationIgnored private var waiting: Request?
-    @ObservationIgnored private var worker: Task<Void, Never>?
-    @ObservationIgnored private var conversation: Int?
+    private let builder = ChatRowBuilder()
+    private var waiting: Request?
+    private var worker: Task<Void, Never>?
+    private var conversation: Int?
 
     /// Shows `input` as the conversation `conversation` numbers. Another
     /// conversation reloads the list at its end; `isReady` stays set within

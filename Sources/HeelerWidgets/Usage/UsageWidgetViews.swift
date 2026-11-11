@@ -733,7 +733,7 @@ struct UsageWidgetHeader: View {
 
     var body: some View {
         (Text(title).fontWeight(.semibold)
-            + Text(detail.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
+            + Text(detail.map { " · \($0)" } ?? "").foregroundColor(.secondary))
             .font(.footnote)
             .lineLimit(1)
     }
@@ -1431,8 +1431,7 @@ enum UsageWidgetText {
     /// to "US$1.23M", for a figure that shortens rather than truncates.
     static func costVariants(_ value: Double?, cents: Bool = true, locale: Locale) -> [String] {
         guard let value else { return [cost(nil, locale: locale)] }
-        let compact = value.formatted(
-            .currency(code: "USD").notation(.compactName).precision(.significantDigits(1...3)).locale(locale))
+        let compact = compactUSD(value, digits: 1...3, locale: locale)
         let whole = AgentUsageStyle.shortCost(value, locale: locale)
         return cents ? [cost(value, locale: locale), whole, compact] : [whole, compact]
     }
@@ -1460,8 +1459,7 @@ enum UsageWidgetText {
         switch metric {
         // Compact, so thousands do not squeeze the plot: "$2K".
         case .cost:
-            value.formatted(
-                .currency(code: "USD").notation(.compactName).precision(.significantDigits(1...2)).locale(locale))
+            compactUSD(value, digits: 1...2, locale: locale)
         case .tokens:
             AgentUsageStyle.tokens(Int64(value), locale: locale)
         }
@@ -1534,4 +1532,13 @@ enum UsageWidgetText {
             ? date.formatted(style.weekday(.abbreviated))
             : date.formatted(style.month(.abbreviated).day())
     }
+}
+
+/// iOS 16: compact notation needs iOS 18; older systems print the full figure.
+private func compactUSD(_ value: Double, digits: ClosedRange<Int>, locale: Locale) -> String {
+    if #available(iOS 18, *) {
+        return value.formatted(
+            .currency(code: "USD").notation(.compactName).precision(.significantDigits(digits)).locale(locale))
+    }
+    return value.formatted(.currency(code: "USD").precision(.significantDigits(digits)).locale(locale))
 }

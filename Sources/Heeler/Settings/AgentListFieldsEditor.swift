@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Per-Host layout edits. The draft session (`beginEditing`, `update`,
 /// `save`, `cancel`) validates a batch and writes it in one step; `commit`
@@ -9,8 +9,7 @@ import Observation
 /// fallback when the plugin has none. A Host that does not follow a plugin
 /// starts from Heeler's own fields and never asks for plugin fields.
 @MainActor
-@Observable
-final class AgentListFieldsEditor {
+final class AgentListFieldsEditor: ObservableObject {
     enum SyncState: Equatable {
         case syncing
         case filled(String)
@@ -34,11 +33,11 @@ final class AgentListFieldsEditor {
     let snapshots: HerdrSidebarSnapshotStore
     private let fetch: Fetch
     private let followsPlugin: @MainActor (Host.ID) -> Bool
-    private(set) var isEditing = false
-    private(set) var drafts: [Host.ID: AgentRowLayout] = [:]
-    private(set) var syncStates: [Host.ID: SyncState] = [:]
-    var errorMessage: String?
-    @ObservationIgnored private var syncRequests: [Host.ID: UUID] = [:]
+    @Published private(set) var isEditing = false
+    @Published private(set) var drafts: [Host.ID: AgentRowLayout] = [:]
+    @Published private(set) var syncStates: [Host.ID: SyncState] = [:]
+    @Published var errorMessage: String?
+    private var syncRequests: [Host.ID: UUID] = [:]
 
     init(
         layouts: AgentRowLayoutStore,

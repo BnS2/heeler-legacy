@@ -19,13 +19,12 @@ import UIKit
 /// either, and nobody can see the difference while the keyboard covers that
 /// edge anyway.
 @MainActor
-@Observable
-final class TerminalKeyboardInset {
+final class TerminalKeyboardInset: ObservableObject {
     /// How much of the terminal's bottom edge the keyboard stack covers.
-    private(set) var height: CGFloat = 0
+    @Published private(set) var height: CGFloat = 0
     /// The last complete keyboard footprint. It survives dismissal so an
     /// in-app keyboard can replace UIKit's keyboard without changing layout.
-    private(set) var lastPresentedHeight: CGFloat = 0
+    @Published private(set) var lastPresentedHeight: CGFloat = 0
     /// Whether the software keyboard really left since it was last presented
     /// or expected. A hardware keyboard attaching hides the software keyboard
     /// without moving first responder, so a presentation that pins its inset
@@ -34,16 +33,16 @@ final class TerminalKeyboardInset {
     /// ``dismissalConfirmationDelay``: swapping input views publishes a
     /// transient will-hide right before the next will-show, and that must
     /// not drop the pin for a frame.
-    private(set) var isSoftwareKeyboardDismissed = false
+    @Published private(set) var isSoftwareKeyboardDismissed = false
     /// How much of the window the keyboard covers right now, frame by frame,
     /// where ``height`` jumps to the end of the motion so the terminal resizes
     /// once. Measured from the window's edge, where the keyboard's own travel
     /// starts; see `View.ridesKeyboard`.
-    private(set) var keyboardRideCoverage: CGFloat = 0
+    @Published private(set) var keyboardRideCoverage: CGFloat = 0
     /// Where ``keyboardRideCoverage`` is heading.
-    private(set) var keyboardRideTarget: CGFloat = 0
+    @Published private(set) var keyboardRideTarget: CGFloat = 0
     /// How far above the window's edge the row rests with no keyboard.
-    private(set) var keyboardRideContentInset: CGFloat = 0
+    @Published private(set) var keyboardRideContentInset: CGFloat = 0
     /// How far the keyboard has raised a row resting on the content edge: the
     /// row holds still until the keyboard reaches it.
     var keyboardRideRaise: CGFloat {
@@ -56,67 +55,67 @@ final class TerminalKeyboardInset {
         isEnabled && !isHoldingHandoffHeight && !isSkippingKeyboardRide
             ? keyboardRideRaise : restingInset
     }
-    @ObservationIgnored private var rideMotion: KeyboardRideMotion?
-    @ObservationIgnored private var rideLink: CADisplayLink?
+    private var rideMotion: KeyboardRideMotion?
+    private var rideLink: CADisplayLink?
     /// Leaving the tools dock, whose footprint the input row already rests on,
     /// moves the keyboard but not the row. A time rather than one motion,
     /// since that swap publishes a hide and then a show.
-    private(set) var isSkippingKeyboardRide = false
-    @ObservationIgnored private var keyboardRideSkipTask: Task<Void, Never>?
+    @Published private(set) var isSkippingKeyboardRide = false
+    private var keyboardRideSkipTask: Task<Void, Never>?
     private static let toolsDockExitDuration = Duration.milliseconds(800)
     static let dismissalConfirmationDelay = Duration.milliseconds(350)
-    @ObservationIgnored private var dismissalConfirmationTask: Task<Void, Never>?
+    private var dismissalConfirmationTask: Task<Void, Never>?
     /// Whether a will-hide is still waiting on ``dismissalConfirmationDelay``.
     var isConfirmingDismissal: Bool { dismissalConfirmationTask != nil }
     /// Long enough to fold a presentation's follow-up frame into the first,
     /// short enough to stay inside the keyboard's own animation.
     static let coalesceDelay = Duration.milliseconds(60)
-    @ObservationIgnored private var coalesceTask: Task<Void, Never>?
+    private var coalesceTask: Task<Void, Never>?
     /// The height ``coalesceTask`` applies, while it is pending.
-    @ObservationIgnored private var coalescingHeight: CGFloat = 0
+    private var coalescingHeight: CGFloat = 0
     /// Waits out the keyboard's own timing: a presentation's coalesce, a
     /// will-hide's confirmation, and the tools-dock exit. These measure gaps
     /// between UIKit's keyboard notifications.
-    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    private let sleep: @Sendable (Duration) async throws -> Void
     /// Waits out the responder-handoff guards. Apart from ``sleep``, since
     /// these are the app's own deadlines: a test can hold or pass them while
     /// the keyboard's timing follows real notifications.
-    @ObservationIgnored private let handoffSleep: @Sendable (Duration) async throws -> Void
+    private let handoffSleep: @Sendable (Duration) async throws -> Void
     /// Nil in production, where the keyboard is measured against `window`.
-    @ObservationIgnored private let measureOverride: (@MainActor (CGRect) -> CGFloat?)?
+    private let measureOverride: (@MainActor (CGRect) -> CGFloat?)?
     /// Nil in production, where `window`'s keyboard layout guide is read.
-    @ObservationIgnored private let measureWindowKeyboardOverride: (@MainActor () -> CGFloat?)?
+    private let measureWindowKeyboardOverride: (@MainActor () -> CGFloat?)?
     /// A presentation published a keyboard-sized end frame that covered none
     /// of the window, so it was dropped; see `keyboardDidShow()`.
-    @ObservationIgnored private var missedPresentationFrame = false
+    private var missedPresentationFrame = false
     /// The window this inset's terminal lives in. Keyboard notifications are
     /// process-wide; with two windows on iPad only the terminal's own window
     /// can say how much of it the keyboard covers.
-    @ObservationIgnored private weak var window: UIWindow?
+    private weak var window: UIWindow?
     /// A view inside the terminal's screen, when the terminal can rest above
     /// a bar rather than on the home indicator; see
     /// ``contentBottomInset(of:in:)``.
-    @ObservationIgnored private weak var contentAnchor: UIView?
-    @ObservationIgnored private var capturesPresentedHeight = true
+    private weak var contentAnchor: UIView?
+    private var capturesPresentedHeight = true
     /// Composer-to-terminal responder handoff can publish transient show,
     /// change-frame, and even hide notifications while the software keyboard
     /// never visibly leaves. Keep the last settled footprint until the new
     /// terminal confirms that its own keyboard frame settled.
-    private(set) var activeResponderHandoffID: UUID?
-    @ObservationIgnored private var responderHandoffFallbackTask: Task<Void, Never>?
+    @Published private(set) var activeResponderHandoffID: UUID?
+    private var responderHandoffFallbackTask: Task<Void, Never>?
     /// The active handoff's owner-side fallback, kept so acceptance can
     /// re-arm it with the settle guard's delay.
-    @ObservationIgnored private var responderHandoffFallback: ResponderHandoffFallback?
+    private var responderHandoffFallback: ResponderHandoffFallback?
     /// A dismissal the handoff has to settle on exit: a hide inside the
     /// freeze, or one still unconfirmed when the freeze began or expiring
     /// during it. Every exit reconciles it against the owning window, so a
     /// hardware keyboard attached just before a mode switch cannot leave the
     /// inset pinned with nothing left to confirm it.
-    @ObservationIgnored private var owesDismissalAfterResponderHandoff = false
+    private var owesDismissalAfterResponderHandoff = false
     /// A presentation from before the freeze whose coalesce the freeze cut
     /// short. Only a cancel lands it; see
     /// ``cancelResponderHandoff(_:currentHeight:)``.
-    @ObservationIgnored private var presentationCutShortByResponderHandoff: CGFloat?
+    private var presentationCutShortByResponderHandoff: CGFloat?
     /// How long a handoff waits, from the switch, for its destination to
     /// accept first responder. It only has to catch a destination that never
     /// receives the request: until one accepts, the outgoing responder keeps
@@ -819,7 +818,7 @@ extension View {
 /// It is not a SwiftUI animation: those start at their first rendered frame,
 /// about 70ms after the keyboard, and leave a hole of about 50ms after it.
 struct KeyboardRideMotion {
-    static let spring = Spring(response: 0.266, dampingRatio: 1)
+    static let spring = CriticalSpring(response: 0.266)
 
     let from: CGFloat
     let target: CGFloat
@@ -867,7 +866,7 @@ private final class KeyboardRideTicker: NSObject {
 
 /// On its own so the surface does not re-evaluate each frame of the ride.
 private struct KeyboardRide: ViewModifier {
-    let inset: TerminalKeyboardInset
+    @ObservedObject var inset: TerminalKeyboardInset
     let layoutInset: CGFloat
     let isEnabled: Bool
 
@@ -879,12 +878,43 @@ private struct KeyboardRide: ViewModifier {
 
 /// On its own for the same reason as ``KeyboardRide``.
 private struct KeyboardLiftPadding: ViewModifier {
-    let inset: TerminalKeyboardInset
+    @ObservedObject var inset: TerminalKeyboardInset
     let restingInset: CGFloat
     let isEnabled: Bool
 
     func body(content: Content) -> some View {
         content.padding(
             .bottom, inset.keyboardLift(restingInset: restingInset, isEnabled: isEnabled))
+    }
+}
+
+/// iOS 16: SwiftUI's `Spring` is iOS 17. This is its critically damped
+/// (dampingRatio 1) closed form: y(t) = (y0 + (v0 + w*y0) t) e^(-w t), with w = 2π / response.
+struct CriticalSpring {
+    let omega: Double
+    init(response: Double) { omega = 2 * Double.pi / response }
+
+    func value(target: CGFloat, initialVelocity: CGFloat, time: Double) -> CGFloat {
+        let y0 = -Double(target)
+        let y = (y0 + (Double(initialVelocity) + omega * y0) * time) * exp(-omega * time)
+        return CGFloat(Double(target) + y)
+    }
+
+    func velocity(target: CGFloat, initialVelocity: CGFloat, time: Double) -> CGFloat {
+        let y0 = -Double(target)
+        let b = Double(initialVelocity) + omega * y0
+        return CGFloat((b - omega * (y0 + b * time)) * exp(-omega * time))
+    }
+
+    /// Time until the remaining travel and speed are negligible.
+    var settlingDuration: Double {
+        var t = 0.0
+        while t < 4 {
+            // Unit travel: within 0.1% of it, and moving under 0.1% of it per second.
+            if abs(1 - value(target: 1, initialVelocity: 0, time: t)) < 0.001,
+               abs(velocity(target: 1, initialVelocity: 0, time: t)) < 0.001 { return t }
+            t += 1.0 / 240
+        }
+        return 4
     }
 }

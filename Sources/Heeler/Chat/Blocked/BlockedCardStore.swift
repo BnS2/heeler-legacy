@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Agent's pane as a Blocked card reads and answers it: the screen
 /// through `agent.read`, keys through `agent.send_keys` and typed text
@@ -69,8 +69,7 @@ struct BlockedCard: Equatable, Sendable {
 /// resent: a dialog that does not respond keeps its answers off until the
 /// screen shows something else or the transcript shows the answer took.
 @MainActor
-@Observable
-final class BlockedCardStore {
+final class BlockedCardStore: ObservableObject {
     struct Timing: Sendable {
         var watchInterval: Duration = .seconds(1)
         /// Between reads while an action checks its steps and effect.
@@ -114,60 +113,60 @@ final class BlockedCardStore {
     }
 
     let program: ChatProgram
-    private(set) var content: Content = .none
+    @Published private(set) var content: Content = .none
     /// What the `.unreadable` card says in place of its sentence and key
     /// pad, for a program whose prompt would act on the pad's keys (see
     /// `ChatProgram.offersKeysWhenBlockedWithoutDialog`). nil keeps both.
-    private(set) var unreadableNote: String?
-    private(set) var progress: Progress = .ready
+    @Published private(set) var unreadableNote: String?
+    @Published private(set) var progress: Progress = .ready
     /// Why the last action sent nothing or stopped part way.
-    private(set) var notice: String?
+    @Published private(set) var notice: String?
     /// Bumped when an answer hands the turn back to the user (a Codex
     /// decline or interrupt), so Chat focuses its Composer.
-    private(set) var composerFocusRequest = 0
+    @Published private(set) var composerFocusRequest = 0
     /// Confirmed answers the transcript can't show, for the timeline.
-    private(set) var history = BlockedHistory()
+    @Published private(set) var history = BlockedHistory()
     /// Folded to a bar; a new dialog unfolds it.
-    var isCollapsed = false
+    @Published var isCollapsed = false
     /// Bumped when another dialog shows, and not when the same one's focus
     /// moves, which on OpenCode swaps a permission's lines for its rule's.
     /// The card's identity, so a note or choice made on one dialog's card
     /// never carries to the next.
-    private(set) var dialogGeneration = 0
+    @Published private(set) var dialogGeneration = 0
 
     /// Whether Stop acts: also after an answer that showed no effect, as a
     /// way out of a dialog that keeps the card waiting.
     var canStop: Bool { progress != .acting }
 
-    @ObservationIgnored private let io: BlockedScreenIO
-    @ObservationIgnored private let timing: Timing
-    @ObservationIgnored private let clock: BlockedCardClock
-    @ObservationIgnored private var activity: ChatAgentActivity = .unknown
-    @ObservationIgnored private var awaitingSession = false
-    @ObservationIgnored private var pendingRequests: [ChatPendingRequest] = []
+    private let io: BlockedScreenIO
+    private let timing: Timing
+    private let clock: BlockedCardClock
+    private var activity: ChatAgentActivity = .unknown
+    private var awaitingSession = false
+    private var pendingRequests: [ChatPendingRequest] = []
     /// Why the newest turn failed, for a program whose card explains a
     /// block without a dialog.
-    @ObservationIgnored private var latestFailure: String?
-    @ObservationIgnored private var resolvedToolUseIDs: Set<String> = []
+    private var latestFailure: String?
+    private var resolvedToolUseIDs: Set<String> = []
     /// Calls the transcript shows past their approval: running or resolved.
-    @ObservationIgnored private var startedToolUseIDs: Set<String> = []
+    private var startedToolUseIDs: Set<String> = []
     /// The calls that waited for approval when an action's keys went out,
     /// on Grok Build only those the card could be answering (see
     /// `waitingCalls(answering:)`).
-    @ObservationIgnored private var waitingWhenSent: Set<String> = []
-    @ObservationIgnored private var isVisible = false
-    @ObservationIgnored private var isSuspended = false
-    @ObservationIgnored private var watcher: Task<Void, Never>?
+    private var waitingWhenSent: Set<String> = []
+    private var isVisible = false
+    private var isSuspended = false
+    private var watcher: Task<Void, Never>?
     /// The dialog an answer showed no effect on, while it stays on screen.
-    @ObservationIgnored private var unconfirmedFingerprint: DialogFingerprint?
+    private var unconfirmedFingerprint: DialogFingerprint?
     /// The dialog on screen and when it first showed.
-    @ObservationIgnored private var firstSeen: (fingerprint: DialogFingerprint, at: ContinuousClock.Instant)?
+    private var firstSeen: (fingerprint: DialogFingerprint, at: ContinuousClock.Instant)?
     /// A dialog an action gave up on part way, shown as the generic card
     /// until another dialog replaces it.
-    @ObservationIgnored private var degraded: (fingerprint: DialogFingerprint, reason: String)?
+    private var degraded: (fingerprint: DialogFingerprint, reason: String)?
     /// Since when a screen without a dialog may be Blocked for a reason
     /// the card can't read: Blocked starting, or an answer taking effect.
-    @ObservationIgnored private var quietSince: ContinuousClock.Instant?
+    private var quietSince: ContinuousClock.Instant?
 
     init(program: ChatProgram, io: BlockedScreenIO, timing: Timing = Timing(), clock: BlockedCardClock = .live) {
         self.program = program

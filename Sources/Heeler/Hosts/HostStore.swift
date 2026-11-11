@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 enum HostStoreError: Error, Equatable {
     /// `update`/`remove` addressed a Host id the catalog does not contain.
@@ -26,8 +26,7 @@ enum HostStoreError: Error, Equatable {
 /// Kinds never read, so such a build can neither show one nor re-save it as
 /// Herdr TUI (ADR 0031).
 @MainActor
-@Observable
-final class HostStore {
+final class HostStore: ObservableObject {
     private static let defaultsKey = "hosts"
     private static let coreDefaultsKey = "herdrCoreHosts"
     private static let catalogVersion = 1
@@ -123,17 +122,17 @@ final class HostStore {
         var order: [Host.ID]?
     }
 
-    private(set) var hosts: [Host]
+    @Published private(set) var hosts: [Host]
     /// The shared catalog could not be read, so no Host is shown or written.
-    private(set) var catalogLoadError: HostStoreError?
+    @Published private(set) var catalogLoadError: HostStoreError?
     /// The herdr-core catalog could not be read. Herdr TUI Hosts carry on from
     /// their own key; nothing goes to this one, whose bytes stay as they are.
-    private(set) var coreCatalogLoadError: HostStoreError?
+    @Published private(set) var coreCatalogLoadError: HostStoreError?
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults?
-    @ObservationIgnored private let secrets: any SecretStore
-    @ObservationIgnored private var catalogEntries: [PersistedHosts.Entry]
-    @ObservationIgnored private var coreCatalogEntries: [PersistedHosts.Entry]
+    private nonisolated(unsafe) let defaults: UserDefaults?
+    private let secrets: any SecretStore
+    private var catalogEntries: [PersistedHosts.Entry]
+    private var coreCatalogEntries: [PersistedHosts.Entry]
 
     init(
         defaults: UserDefaults = .standard,

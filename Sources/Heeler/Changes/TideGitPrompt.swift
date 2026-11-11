@@ -147,7 +147,7 @@ enum TideGitPalette {
 /// the staged count's "+" would otherwise echo. Only the branch gives way
 /// when the line is short of room.
 struct TideGitPrompt: View {
-    let store: ChangesStore
+    @ObservedObject var store: ChangesStore
     var font: Font = .caption2.weight(.medium)
 
     var body: some View {

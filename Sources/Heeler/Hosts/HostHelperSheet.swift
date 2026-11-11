@@ -4,7 +4,7 @@ import SwiftUI
 /// the linger offer, the places an install writes to (each browsed one folder
 /// at a time), and removal.
 struct HostHelperSheet: View {
-    let store: HostHelperStore
+    @ObservedObject var store: HostHelperStore
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingRemoval = false
 
@@ -76,7 +76,7 @@ struct HostHelperSheet: View {
                 .foregroundStyle(store.needsAttention ? Color.orange : Color.secondary)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 3)
-                .background(.fill.tertiary, in: Capsule())
+                .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                 .accessibilityLabel("Status")
                 .accessibilityValue(store.rowValue)
                 .accessibilityIdentifier("hosts.helper.status")

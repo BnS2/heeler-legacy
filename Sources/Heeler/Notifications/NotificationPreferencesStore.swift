@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Scoped borrow of a Host's live connection for Notification Registration
 /// work (#75). The Console already keeps one SSH connection per Host;
@@ -42,8 +42,7 @@ extension NotificationTransportProvider {
 /// back, and `refresh` re-reads the file so the screen shows the Host's
 /// truth, not a local mirror.
 @MainActor
-@Observable
-final class NotificationPreferencesStore {
+final class NotificationPreferencesStore: ObservableObject {
     /// One Host's confirmed registration state, as its file last reported it.
     struct HostSettings: Equatable, Sendable {
         /// Whether this device has an entry in the Host's registration file.
@@ -69,32 +68,32 @@ final class NotificationPreferencesStore {
         case failed(message: String, settings: HostSettings)
     }
 
-    private(set) var hosts: [Host] = []
-    private(set) var states: [Host.ID: HostState] = [:]
+    @Published private(set) var hosts: [Host] = []
+    @Published private(set) var states: [Host.ID: HostState] = [:]
     /// What a core Host's Helper needs, from its last read.
-    private var helperRequirements: [Host.ID: String] = [:]
+    @Published private var helperRequirements: [Host.ID: String] = [:]
     /// Whether a core Host's Helper can drive a Live Activity, from its last read.
     /// Nil on a read that failed, and on any other Host.
-    private var helperDrivesLiveActivity: [Host.ID: Bool] = [:]
+    @Published private var helperDrivesLiveActivity: [Host.ID: Bool] = [:]
     /// How a core Host's Helper reads on its Host page, from its last read. Nil
     /// on a read that failed, and on any other Host.
-    private var helperPresentations: [Host.ID: HostHelperPresentation] = [:]
+    @Published private var helperPresentations: [Host.ID: HostHelperPresentation] = [:]
     /// What a core Host last confirmed, held for its banner gate while it is read
     /// again. Reads repeat with the connection and a Helper's takes seconds; Herdr
     /// TUI's gate still fails closed for its read.
-    private var settingsDuringReRead: [Host.ID: HostSettings] = [:]
+    @Published private var settingsDuringReRead: [Host.ID: HostSettings] = [:]
     /// What each Host last settled on, shown while it is read again so Settings
     /// keeps its rows steady. Display only: no gate reads it.
-    private var settledBeforeReRead: [Host.ID: HostState] = [:]
+    @Published private var settledBeforeReRead: [Host.ID: HostState] = [:]
     /// A catalog edit/removal invalidates every result captured for that Host.
-    private var operations: [Host.ID: UUID] = [:]
+    @Published private var operations: [Host.ID: UUID] = [:]
     /// Seen marks waiting for a core Host's registration to be known, or for the
     /// write before them. Each holds every mark, so a newer one replaces an older.
-    private var pendingSeenMarks: [Host.ID: PendingSeenMarks] = [:]
-    private var seenMarkWrites: [Host.ID: Task<Void, Never>] = [:]
+    @Published private var pendingSeenMarks: [Host.ID: PendingSeenMarks] = [:]
+    @Published private var seenMarkWrites: [Host.ID: Task<Void, Never>] = [:]
     /// Every mark this device holds on a core Host, for a registration that has
     /// no file of them yet.
-    @ObservationIgnored private var heldSeenMarks: @MainActor (Host.ID) -> PendingSeenMarks? = { _ in nil }
+    private var heldSeenMarks: @MainActor (Host.ID) -> PendingSeenMarks? = { _ in nil }
 
     private let transports: any NotificationTransportProvider
     private let deviceToken: @MainActor () -> APNSDeviceToken?
@@ -105,7 +104,7 @@ final class NotificationPreferencesStore {
     private let ceremony: NotificationRegistrationCeremony
     /// Fires after a registration write the Host confirmed, so Live
     /// Activity writes that failed for want of an entry can retry.
-    @ObservationIgnored var onRegistered: (@MainActor (Host.ID) -> Void)?
+    var onRegistered: (@MainActor (Host.ID) -> Void)?
 
     init(
         transports: any NotificationTransportProvider,

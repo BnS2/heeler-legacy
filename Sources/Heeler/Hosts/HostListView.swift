@@ -1,4 +1,3 @@
-import Observation
 import SwiftUI
 
 struct HostRemovalRequest: Equatable {
@@ -105,9 +104,8 @@ extension HostRemovalDependencies {
 
 /// The Hosts whose confirmed removal has not finished yet.
 @MainActor
-@Observable
-final class HostRemovalsInFlight {
-    private(set) var hostIDs: Set<Host.ID> = []
+final class HostRemovalsInFlight: ObservableObject {
+    @Published private(set) var hostIDs: Set<Host.ID> = []
 
     nonisolated init() {}
 
@@ -137,12 +135,11 @@ private struct HostDuplicateRequest: Identifiable {
 }
 
 @MainActor
-@Observable
-final class HostRemovalStore {
-    private(set) var errorMessage: String?
-    private(set) var pendingRequest: HostRemovalRequest?
+final class HostRemovalStore: ObservableObject {
+    @Published private(set) var errorMessage: String?
+    @Published private(set) var pendingRequest: HostRemovalRequest?
 
-    @ObservationIgnored
+
     private let store: HostStore
 
     init(store: HostStore) {
@@ -207,7 +204,7 @@ final class HostRemovalStore {
 /// by what each needs from the user (#316), every row leading into that
 /// Host's onboarding checklist.
 struct HostListView: View {
-    let store: HostStore
+    @ObservedObject var store: HostStore
     private let initialHostID: Host.ID?
     /// Opens `initialHostID`'s Host Helper sheet over its detail.
     private let opensHostHelper: Bool
@@ -309,14 +306,14 @@ struct HostListView: View {
         NavigationStack(path: $path) {
             Group {
                 if store.catalogLoadError != nil {
-                    ContentUnavailableView {
+                    CompatUnavailableView {
                         Label("Hosts Unavailable", systemImage: "externaldrive.badge.exclamationmark")
                     } description: {
                         Text(
                             String(localized: "The saved Host catalog could not be read. Its original data was preserved; reinstalling or adding a Host would risk losing it."))
                     }
                 } else if store.hosts.isEmpty, store.coreCatalogLoadError == nil {
-                    ContentUnavailableView {
+                    CompatUnavailableView {
                         Label("No Hosts", systemImage: "server.rack")
                     } description: {
                         Text("Add a machine that runs herdr to get started.")
@@ -401,7 +398,7 @@ struct HostListView: View {
                         .id(id)
                         .modifier(ReturnToOrigin(origin: route.isRequested ? origin : nil))
                 } else {
-                    ContentUnavailableView("Host removed", systemImage: "server.rack")
+                    CompatUnavailableView("Host removed", systemImage: "server.rack")
                 }
             }
             .sheet(
@@ -505,7 +502,7 @@ struct HostListView: View {
             }
             // A caller that keeps this view's identity across requests
             // still lands on the new one.
-            .onChange(of: initialHostID) { _, id in
+            .onChangeCompat(of: initialHostID) { _, id in
                 if let route = Self.requestedRoute(id, opensHostHelper: opensHostHelper, in: store) {
                     path = [route]
                 }

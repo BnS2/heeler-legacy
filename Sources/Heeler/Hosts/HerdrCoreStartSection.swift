@@ -57,8 +57,7 @@ enum CoreStartState: Equatable, Sendable {
 /// Below a core Host's checks: its Start or the instructions it has instead,
 /// and what came of the last Start.
 struct HerdrCoreStartSection: View {
-    let store: HostOnboardingStore
-
+    @ObservedObject var store: HostOnboardingStore
     var body: some View {
         if store.coreStartOffer != nil || store.coreStart.note != nil {
             Section {

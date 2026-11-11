@@ -1,16 +1,15 @@
+import Combine
 import Foundation
-import Observation
 
 /// The harness edits this device applied, per Host, for undoing them. It goes with
 /// the Host and outlives its core and its Host Helper, since the edit is in the
 /// harness's own file (ADR 0033).
 @MainActor
-@Observable
-final class HarnessConfigEditStore {
+final class HarnessConfigEditStore: ObservableObject {
     private static let defaultsKey = "harness-config.applied-edits"
 
-    @ObservationIgnored private let defaults: UserDefaults?
-    private var entries: [Host.ID: [HarnessConfigAppliedEdit]]
+    private let defaults: UserDefaults?
+    @Published private var entries: [Host.ID: [HarnessConfigAppliedEdit]]
 
     /// With no `defaults` it lasts as long as the object, for demo mode and tests.
     init(defaults: UserDefaults? = nil) {
@@ -101,8 +100,7 @@ final class HarnessConfigEditStore {
 /// One edit's walk from reading the file to the user's answer, for the place that
 /// offers it or lists it. Nothing is written before `accept()` or `undo()`.
 @MainActor
-@Observable
-final class HarnessConfigEditFlow: Identifiable {
+final class HarnessConfigEditFlow: ObservableObject, Identifiable {
     enum Phase: Equatable {
         /// Working out which file this offer is about, so it claims no edit yet.
         case locating
@@ -124,16 +122,16 @@ final class HarnessConfigEditFlow: Identifiable {
         case offer(editID: String, path: String?)
     }
 
-    private(set) var phase: Phase
+    @Published private(set) var phase: Phase
     /// True when the last failure was the file changing under an undo, and so
     /// forgetting the edit is what is left to offer.
-    private(set) var canForget = false
+    @Published private(set) var canForget = false
 
     private let hostID: Host.ID
-    private var subject: Subject
+    @Published private var subject: Subject
     /// A write whose answer never came. It may be on the Host, and with no record
     /// Heeler would read its own edit as one the file already had.
-    private var unconfirmedWrite: HarnessConfigPendingChange?
+    @Published private var unconfirmedWrite: HarnessConfigPendingChange?
     private let store: HarnessConfigEditStore
     private let makeEdit: @MainActor @Sendable () async throws -> HarnessConfigEdit
     private let services: @MainActor @Sendable () async throws -> any HostServices

@@ -1,6 +1,6 @@
+import Combine
 import AudioToolbox
 import Foundation
-import Observation
 
 /// One in-app Agent Notification banner ready to display (#77): where a tap
 /// lands and the exact push-renderer copy, so in-app and APNs wording cannot
@@ -23,21 +23,20 @@ struct AgentNotificationBanner: Equatable, Sendable {
 /// confirmed notify flags are unknown fails closed — exactly like the
 /// plugin's missing-flag semantics.
 @MainActor
-@Observable
-final class AgentNotificationBannerStore {
-    private(set) var banner: AgentNotificationBanner?
+final class AgentNotificationBannerStore: ObservableObject {
+    @Published private(set) var banner: AgentNotificationBanner?
 
     /// Last observed status per pane; a banner candidate is a change of it.
-    @ObservationIgnored private var statuses: [ConsoleAgent.ID: AgentStatus] = [:]
+    private var statuses: [ConsoleAgent.ID: AgentStatus] = [:]
     /// In-flight anti-flap holds, cancelled when the status moves on.
-    @ObservationIgnored private var holds: [ConsoleAgent.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var dismissal: Task<Void, Never>?
-    @ObservationIgnored private let holdDuration: Duration
-    @ObservationIgnored private let dismissDelay: Duration
-    @ObservationIgnored private let presentedAgent: @MainActor () -> ConsoleAgent.ID?
-    @ObservationIgnored private let triggers:
+    private var holds: [ConsoleAgent.ID: Task<Void, Never>] = [:]
+    private var dismissal: Task<Void, Never>?
+    private let holdDuration: Duration
+    private let dismissDelay: Duration
+    private let presentedAgent: @MainActor () -> ConsoleAgent.ID?
+    private let triggers:
         @MainActor (Host.ID) -> NotificationTriggerPreferences?
-    @ObservationIgnored private let playSound: @MainActor () -> Void
+    private let playSound: @MainActor () -> Void
 
     /// - Parameters:
     ///   - holdDuration: how long a transition must hold before announcing.

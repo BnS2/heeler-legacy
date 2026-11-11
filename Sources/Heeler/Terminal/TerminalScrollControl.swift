@@ -1,4 +1,4 @@
-import Observation
+import Combine
 
 /// A handle on the live terminal's scroll path for chrome that sits outside
 /// it. Same lifetime rules as ``TerminalKeyboardControl``: the reference is
@@ -9,8 +9,7 @@ import Observation
 /// itself on the primary screen, where local scrollback already works and
 /// remote wheel reports would be the wrong tool. `refs #268`.
 @MainActor
-@Observable
-final class TerminalScrollControl {
+final class TerminalScrollControl: ObservableObject {
     weak var terminal: HeelerTerminalView? {
         didSet {
             oldValue?.onAlternateScreenChange = nil
@@ -31,11 +30,11 @@ final class TerminalScrollControl {
     /// never reaches a listener that reasons about the remote TUI's position.
     /// The jump chrome uses it to learn that the viewport has left live
     /// output (or may have left the oldest message) without a jump. `refs #268`.
-    var onTouchScroll: ((_ towardOlderContent: Bool) -> Void)?
+    @Published var onTouchScroll: ((_ towardOlderContent: Bool) -> Void)?
 
     /// Mirrors the surface's DECSET 1049/47/1047 state. False when no terminal
     /// is attached.
-    private(set) var isAlternateScreen = false
+    @Published private(set) var isAlternateScreen = false
 
     /// Whether a scroll step can actually move the remote application's own
     /// view.
@@ -48,7 +47,7 @@ final class TerminalScrollControl {
     /// reads as line editing. Nothing else can stand in, because an
     /// alternate-screen application leaves no herdr-side scrollback for
     /// `pane.read` to return. `refs #268`.
-    private(set) var canScrollRemoteContent = false
+    @Published private(set) var canScrollRemoteContent = false
 
     /// One scroll step of `rows` lines. Same branch `scrollTouch` takes
     /// (remote sequence when the mode tracker supplies one, local

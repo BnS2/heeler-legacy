@@ -126,7 +126,7 @@ struct AgentUsageEstimatedCost: View {
 struct AgentUsageSection: View {
     let hostID: Host.ID
     let hostName: String
-    let store: AgentUsageStore
+    @ObservedObject var store: AgentUsageStore
     /// Shows this Host on the Usage tab.
     var openUsage: (() -> Void)?
     @Environment(\.locale) private var locale
@@ -287,7 +287,7 @@ struct AgentUsageLimitRow: View {
 /// One Host's consent to read Claude Code's plan limits. While it is off,
 /// the row says so in place of the windows.
 struct ClaudeUsageLimitsToggle: View {
-    @Bindable var store: AgentUsageStore
+    @ObservedObject var store: AgentUsageStore
 
     var body: some View {
         Toggle(isOn: $store.claudeLimitsEnabled) {

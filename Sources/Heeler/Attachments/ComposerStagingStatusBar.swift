@@ -3,8 +3,7 @@ import SwiftUI
 /// The staging's progress or result, with its commands, above the Composer:
 /// the same bar on the Agent terminal and in Chat. Empty while idle.
 struct ComposerStagingStatusBar: View {
-    let staging: ComposerStagingStore
-
+    @ObservedObject var staging: ComposerStagingStore
     var body: some View {
         if let presentation = staging.presentation {
             AttachmentStatusBar(

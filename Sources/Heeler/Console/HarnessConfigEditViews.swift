@@ -21,9 +21,9 @@ struct HarnessConfigChangeLines: View {
 
     private func row(_ line: HarnessConfigShownLine) -> some View {
         let isAdded = line.kind == .added
-        return (Text(verbatim: isAdded ? "+ " : "- ").foregroundStyle(isAdded ? Color.green : Color.red)
+        return (Text(verbatim: isAdded ? "+ " : "- ").foregroundColor(isAdded ? Color.green : Color.red)
             + Text(verbatim: line.text)
-            + (line.endsWithoutNewline ? Text(" (no newline)").foregroundStyle(.secondary) : Text(verbatim: "")))
+            + (line.endsWithoutNewline ? Text(" (no newline)").foregroundColor(.secondary) : Text(verbatim: "")))
             .font(.footnote.monospaced())
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -64,9 +64,9 @@ struct HarnessConfigFolderLines: View {
 
     private func row(_ file: String) -> some View {
         let added = !inPlace.contains(file)
-        return (Text(verbatim: added ? "+ " : "  ").foregroundStyle(Color.green)
+        return (Text(verbatim: added ? "+ " : "  ").foregroundColor(Color.green)
             + Text(verbatim: (file as NSString).lastPathComponent)
-            .foregroundStyle(added ? Color.primary : Color.secondary))
+            .foregroundColor(added ? Color.primary : Color.secondary))
             .font(.footnote.monospaced())
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -76,7 +76,7 @@ struct HarnessConfigFolderLines: View {
 
 /// An offer's place: the change for the user's word, and its undo afterwards.
 struct HarnessConfigEditOffer: View {
-    let flow: HarnessConfigEditFlow
+    @ObservedObject var flow: HarnessConfigEditFlow
     let offer: String
     let actionTitle: String
     let afterApplying: String
@@ -190,7 +190,7 @@ struct HerdrCoreStatusExplanationSheet: View {
         .presentationDetents([.medium, .large])
         // Opaque: over a terminal's dark ground the default glass turns the change's
         // colored lines and every footnote hard to read.
-        .presentationBackground(ConsoleStatusSheetPresentationModifier.formBackground)
+        .presentationBackgroundCompat(ConsoleStatusSheetPresentationModifier.formBackground)
     }
 }
 
@@ -225,13 +225,13 @@ struct OpenCodePluginEditSheet: View {
         }
         .presentationDetents([.medium, .large])
         // Opaque, as the status explanation's sheet is, for the same reason.
-        .presentationBackground(ConsoleStatusSheetPresentationModifier.formBackground)
+        .presentationBackgroundCompat(ConsoleStatusSheetPresentationModifier.formBackground)
     }
 }
 
 /// Shows the explanation from the status line of an Agent that has one.
 struct AgentStatusExplanationPresenter: ViewModifier {
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     let agentID: ConsoleAgent.ID
     @State private var isPresented = false
 
@@ -259,7 +259,7 @@ struct AgentStatusExplanationPresenter: ViewModifier {
             .sheet(isPresented: $isPresented) { sheet }
             // The Agent reported: there is nothing left to explain here, and the
             // Host's detail still lists any edit.
-            .onChange(of: explanation == nil) { _, isGone in
+            .onChangeCompat(of: explanation == nil) { _, isGone in
                 if isGone { isPresented = false }
             }
     }
@@ -272,7 +272,7 @@ extension EnvironmentValues {
 /// The harness edits this device applied on a Host, each with its Undo. Host
 /// detail lists them, so one stays undoable once its Agent reports or is gone.
 struct HarnessConfigEditsSection: View {
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     let hostID: Host.ID
 
     var body: some View {

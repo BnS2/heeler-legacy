@@ -8,12 +8,12 @@ import PackageDescription
 // Upgrade with `scripts/use-overlay-natives-release.sh <version>` (repository
 // root). Always depend on an exact release; never on a branch or a range.
 let nativesDependency: Package.Dependency =
-    .package(url: "https://github.com/Ylarod/heeler-overlay-natives.git", exact: "1.0.3")
+    .package(name: "heeler-overlay-natives", path: "../HeelerOverlayNatives")
 
 let package = Package(
     name: "HeelerOverlay",
     platforms: [
-        .iOS(.v18),
+        .iOS(.v16),
     ],
     products: [
         .library(name: "HeelerOverlay", targets: ["HeelerOverlay"]),

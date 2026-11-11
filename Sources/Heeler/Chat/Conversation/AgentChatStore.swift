@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// What one Agent's Chat reads through. ConsoleStore binds the closures
 /// late to the Host's live connection, so a reconnect never strands them.
@@ -78,8 +78,7 @@ enum ChatCandidatePreview: Equatable, Sendable {
 /// older page or a retry, only set a flag and wake the loop, so a poll, a
 /// page and a save never interleave on one transcript.
 @MainActor
-@Observable
-final class AgentChatStore {
+final class AgentChatStore: ObservableObject {
     struct Timing: Sendable {
         var activeInterval: Duration = .seconds(1)
         var idleInterval: Duration = .seconds(4)
@@ -189,39 +188,39 @@ final class AgentChatStore {
     let agentID: ConsoleAgent.ID
     let program: ChatProgram
     /// The conversation as last read, or why there is none.
-    private(set) var conversation: ChatConversationSnapshot
+    @Published private(set) var conversation: ChatConversationSnapshot
     /// Whether a Chat view is showing this conversation.
-    private(set) var isVisible = false
+    @Published private(set) var isVisible = false
     /// Changes whenever Chat starts following another conversation, which
     /// the timeline opens at its end instead of diffing into.
-    private(set) var conversationGeneration = 0
+    @Published private(set) var conversationGeneration = 0
     /// Each message `updateSends(_:)` reported, by Composer message id.
-    private(set) var sendStatuses: [UUID: SendStatus] = [:]
+    @Published private(set) var sendStatuses: [UUID: SendStatus] = [:]
     /// The dialog the Agent waits on while herdr reports it Blocked.
     let blocked: BlockedCardStore
     /// Output read again for expanded tool rows in this conversation.
-    private(set) var outputs = ChatToolOutputs()
+    @Published private(set) var outputs = ChatToolOutputs()
     /// The Subagents and Workflows the conversation's program runs beside
     /// it, as last read.
-    private(set) var backgroundWork = ChatBackgroundWork()
+    @Published private(set) var backgroundWork = ChatBackgroundWork()
     /// A send the program recorded in another session, which holds every
     /// send until the user is back in this conversation. Only the prompt
     /// log sets it; what the screen shows is read afresh at each send.
-    private(set) var sessionConcern: ChatSessionConcern?
+    @Published private(set) var sessionConcern: ChatSessionConcern?
     /// Why the conversation herdr reports may not be the one in the Agent's
     /// terminal, read from how the program was launched. It describes the
     /// process, so it outlives a change of conversation.
-    private(set) var launchNotice: ChatLaunchNotice?
+    @Published private(set) var launchNotice: ChatLaunchNotice?
     /// Whether a read of the launch has finished, so a missing notice
     /// means none rather than not known yet.
-    private(set) var hasCheckedLaunch = false
+    @Published private(set) var hasCheckedLaunch = false
     /// The candidate list the user asked for.
-    private(set) var candidates = ChatCandidatesState.notAsked
+    @Published private(set) var candidates = ChatCandidatesState.notAsked
     /// Where the user's confirmation of a candidate stands.
-    private(set) var pickConfirmation = ChatPickConfirmation.none
+    @Published private(set) var pickConfirmation = ChatPickConfirmation.none
     /// From `retry()` until a turn of the loop that began after it ends,
     /// so Check Again shows the look it asked for.
-    private(set) var isRetrying = false
+    @Published private(set) var isRetrying = false
 
     /// Until the first read of the launch, waiting for a session may be
     /// the notice's case, which a prompt won't end: Chat keeps looking
@@ -235,172 +234,172 @@ final class AgentChatStore {
     /// waiting on it. The draft may have been written for the last one, so
     /// the next Send stops once, as a Send whose own check moves Chat does,
     /// unless the draft changed since.
-    @ObservationIgnored private var movedSinceDraft = false
+    private var movedSinceDraft = false
     /// The Composer's draft as last seen (`draftDidChange`), and what it held
     /// when Chat moved: a refused Send puts the same text back, which is no
     /// draft written since.
-    @ObservationIgnored private var composerDraft = ""
-    @ObservationIgnored private var draftAtMove = ""
+    private var composerDraft = ""
+    private var draftAtMove = ""
     /// When the one check `Timing.lateEvidenceCheck` allows after an idle report
     /// is due. Only a running loop, which a Chat on screen keeps, takes it; one
     /// overdue when Chat opens is the check opening makes anyway.
-    @ObservationIgnored private var lateEvidenceCheckAt: Date?
-    @ObservationIgnored private let source: AgentChatSource
+    private var lateEvidenceCheckAt: Date?
+    private let source: AgentChatSource
     /// The pane as a Blocked card types into it: on a herdr-core Host, each
     /// step only while the process read last still holds the terminal.
     var screenIO: BlockedScreenIO { source.screen }
     /// The pictures image rows show, read over the same Host connection.
-    @ObservationIgnored let thumbnails: ChatImageThumbnails
-    @ObservationIgnored private let timing: Timing
-    @ObservationIgnored private let now: @Sendable () -> Date
-    @ObservationIgnored private(set) var agent: Agent
+    let thumbnails: ChatImageThumbnails
+    private let timing: Timing
+    private let now: @Sendable () -> Date
+    private(set) var agent: Agent
     /// Whether this conversation has had a live read. Until then the
     /// Background Work list stays empty: saved work alone could have ended
     /// long ago (ADR 0024).
-    @ObservationIgnored private var hasReadLive = false
+    private var hasReadLive = false
     /// What herdr last said the Agent's session is.
-    @ObservationIgnored private var resolution: ConversationReference.Resolution
+    private var resolution: ConversationReference.Resolution
     /// A session the transcript says the conversation continued in, until
     /// herdr reports a session of its own.
-    @ObservationIgnored private var continuedSession: ConversationReference?
-    @ObservationIgnored private var followed: ConversationReference?
+    private var continuedSession: ConversationReference?
+    private var followed: ConversationReference?
     /// The conversation herdr still reports after the program left it for
     /// its home screen, and the terminal title it had there. Reports of it
     /// read as no report until the program shows it again or herdr reports
     /// another (`checkStartScreen`).
-    @ObservationIgnored private var staleSession: ConversationReference?
-    @ObservationIgnored private var staleTitle: String?
+    private var staleSession: ConversationReference?
+    private var staleTitle: String?
     /// Whether the last check bound a confirmed pick, which a send guard watches.
-    @ObservationIgnored private var followsPick = false
+    private var followsPick = false
     /// Sends made on the pick, until a turn's end says whether each arrived.
-    @ObservationIgnored private var pickGuardSends: Set<UUID> = []
-    @ObservationIgnored private var pickGuardTurnEnd: Date?
+    private var pickGuardSends: Set<UUID> = []
+    private var pickGuardTurnEnd: Date?
     /// When the last read began that reached the end of what the source holds. Only
     /// such a read shows a message is not there.
-    @ObservationIgnored private var pickGuardReadStart: Date?
+    private var pickGuardReadStart: Date?
     /// Candidates the user has read, the only ones a confirmation may name.
-    @ObservationIgnored private var previewedCandidates: Set<String> = []
+    private var previewedCandidates: Set<String> = []
     /// Why the last check of the Agent's process bound nothing.
-    @ObservationIgnored private var evidenceReason: ChatUnavailableReason?
+    private var evidenceReason: ChatUnavailableReason?
     /// Where the last check that bound says the Agent keeps its Transcripts,
     /// and the directory it filed this conversation under, if it said.
-    @ObservationIgnored private var evidenceRoot: String?
-    @ObservationIgnored private var evidenceDirectory: String?
+    private var evidenceRoot: String?
+    private var evidenceDirectory: String?
     /// Retry asks the start-screen watch for a look at the screen.
-    @ObservationIgnored private var screenCheckRequested = false
+    private var screenCheckRequested = false
     /// Counts calls to `retry()`, so a turn ends `isRetrying` only when
     /// no retry came after it began.
-    @ObservationIgnored private var retryRequests = 0
+    private var retryRequests = 0
     /// Whether the next visible step reads how the program was launched.
-    @ObservationIgnored private var needsLaunchCheck = true
-    @ObservationIgnored private var lastLaunchCheck: Date?
+    private var needsLaunchCheck = true
+    private var lastLaunchCheck: Date?
     /// Whether the last read of the launch failed, which the next session
     /// recheck tries again.
-    @ObservationIgnored private var launchCheckFailed = false
+    private var launchCheckFailed = false
     /// The transport reads no processes, so Chat stops asking.
-    @ObservationIgnored private var launchCheckUnavailable = false
-    @ObservationIgnored private var engine: ChatConversationEngine?
-    @ObservationIgnored private var restored = false
-    @ObservationIgnored private var appliedRevision: Int?
-    @ObservationIgnored private var needsAgentRefresh = true
+    private var launchCheckUnavailable = false
+    private var engine: ChatConversationEngine?
+    private var restored = false
+    private var appliedRevision: Int?
+    private var needsAgentRefresh = true
     /// Rejects an Agent query overtaken by a newer Console session record.
-    @ObservationIgnored private var sessionRecordRevision = 0
-    @ObservationIgnored private var lastAgentRefresh: Date?
+    private var sessionRecordRevision = 0
+    private var lastAgentRefresh: Date?
     /// Agent queries and transcript reads recover independently.
-    @ObservationIgnored private var agentRefreshFailure: TransportError?
+    private var agentRefreshFailure: TransportError?
     /// One Agent query lost to the link can be a passing stall, which the
     /// connection owner handles and shows by itself. A second in a row, in the
     /// same stretch on screen, is news.
-    @ObservationIgnored private var consecutiveAgentRefreshLinkFailures = 0
-    @ObservationIgnored private var transcriptReadFailure: TransportError?
+    private var consecutiveAgentRefreshLinkFailures = 0
+    private var transcriptReadFailure: TransportError?
     /// A page above the oldest message shown that waits for the loop, by
     /// who asked for it.
-    @ObservationIgnored private var olderRequest: OlderRequest?
+    private var olderRequest: OlderRequest?
     /// A long request for older history takes turns with looking for what
     /// the Agent writes, so the newest rows never wait for the oldest.
-    @ObservationIgnored private var pollsBeforeNextOlderPage = false
+    private var pollsBeforeNextOlderPage = false
     /// Look for the transcript's file again before the next read: Codex
     /// continues an undone thread in a new file and leaves the old one
     /// unchanged, so following it alone never shows the new turns.
-    @ObservationIgnored private var needsRelocate = false
-    @ObservationIgnored private var nextOpen: Date?
-    @ObservationIgnored private var failedOpens = 0
+    private var needsRelocate = false
+    private var nextOpen: Date?
+    private var failedOpens = 0
     /// Reads in a row that timed out, which slow a conversation read by
     /// query.
-    @ObservationIgnored private var timedOutReads = 0
-    @ObservationIgnored private var lastActivity: Date?
-    @ObservationIgnored private var isSuspended = false
-    @ObservationIgnored private var loop: Task<Void, Never>?
-    @ObservationIgnored private var loopID: UUID?
+    private var timedOutReads = 0
+    private var lastActivity: Date?
+    private var isSuspended = false
+    private var loop: Task<Void, Never>?
+    private var loopID: UUID?
     /// The last loop's end, saving included; a new loop waits for it.
-    @ObservationIgnored private var finishing: Task<Void, Never>?
-    @ObservationIgnored private var sleeper: Task<Void, Never>?
-    @ObservationIgnored private var wakeRequested = false
+    private var finishing: Task<Void, Never>?
+    private var sleeper: Task<Void, Never>?
+    private var wakeRequested = false
     /// The Chat views on screen; the conversation is followed while any is.
-    @ObservationIgnored private var viewers: Set<UUID> = []
-    @ObservationIgnored private var sends: [TrackedSend] = []
+    private var viewers: Set<UUID> = []
+    private var sends: [TrackedSend] = []
     /// Sends the input box was last seen holding, which stay `.returned`
     /// until the transcript records them or a later read of the box no
     /// longer finds them.
-    @ObservationIgnored private var returnedSends: Set<UUID> = []
+    private var returnedSends: Set<UUID> = []
     /// Returned sends a later read of the box no longer found, which stay
     /// `.discarded` unless the transcript records them.
-    @ObservationIgnored private var discardedSends: Set<UUID> = []
+    private var discardedSends: Set<UUID> = []
     /// Returned sends the box was seen holding among more text, which the
     /// user added in the terminal: a recorded prompt that contains one
     /// settles it, since what the user sent is that text and more.
-    @ObservationIgnored private var extendedSends: Set<UUID> = []
+    private var extendedSends: Set<UUID> = []
     /// Sends already looked for in the input box since the Agent last
     /// turned idle: each idle spell reads the screen once for them.
-    @ObservationIgnored private var returnChecked: Set<UUID> = []
+    private var returnChecked: Set<UUID> = []
     /// What the program said on screen about each refused send.
-    @ObservationIgnored private var refusedSends: [UUID: String] = [:]
+    private var refusedSends: [UUID: String] = [:]
     /// Overdue `/compact` sends already looked for on the screen, once each.
-    @ObservationIgnored private var compactChecked: Set<UUID> = []
+    private var compactChecked: Set<UUID> = []
     /// When the screen last showed a `/compact` send's compaction running:
     /// its echo waits `Timing.echoTimeout` from then, not from delivery.
-    @ObservationIgnored private var compactingSeen: [UUID: Date] = [:]
+    private var compactingSeen: [UUID: Date] = [:]
     /// Each send's witness, for a program that logs its prompts.
-    @ObservationIgnored private var witnesses: [UUID: WitnessState] = [:]
+    private var witnesses: [UUID: WitnessState] = [:]
     /// The latest mark taken for each send, kept so tests can wait for them.
-    @ObservationIgnored private var witnessMarks: [UUID: Task<Void, Never>] = [:]
+    private var witnessMarks: [UUID: Task<Void, Never>] = [:]
     /// Sends the prompt log says another session took.
-    @ObservationIgnored private var misdirectedSends: Set<UUID> = []
+    private var misdirectedSends: Set<UUID> = []
     /// When the last transcript read applied to this conversation started:
     /// a session check trusts the transcript once one started after herdr
     /// last reported the Agent idle.
-    @ObservationIgnored private var lastReadStartedAt: Date?
+    private var lastReadStartedAt: Date?
     /// When herdr last reported the Agent idle, while it still is.
-    @ObservationIgnored private var idleSince: Date?
+    private var idleSince: Date?
     /// When herdr last reported a turn starting. Esc puts back only the
     /// steers queued in the turn it stops, so sends delivered before this
     /// are never looked for in the box.
-    @ObservationIgnored private var turnStartedAt: Date?
+    private var turnStartedAt: Date?
     /// When herdr last reported the Agent Working or Blocked, while it
     /// still does, and the earlier spells it did so that ended after the
     /// oldest send still awaiting its echo was delivered: a program whose
     /// echo clock stops while it works leaves them out of that clock.
-    @ObservationIgnored private var busySince: Date?
-    @ObservationIgnored private var busySpells: [(start: Date, end: Date)] = []
+    private var busySince: Date?
+    private var busySpells: [(start: Date, end: Date)] = []
     /// Recorded prompts already taken by a send in the current
     /// conversation: one recorded copy answers one send. Keyed by entry for
     /// a program whose entries outlive a rewrite of its file, otherwise by
     /// offset within one layout of the file. The value is when the send
     /// that took it was delivered.
-    @ObservationIgnored private var claimedPrompts: [String: Date] = [:]
-    @ObservationIgnored private var claimedGeneration = 0
-    @ObservationIgnored private var claimedLayout = 0
-    @ObservationIgnored private var skillNames: Set<String> = []
+    private var claimedPrompts: [String: Date] = [:]
+    private var claimedGeneration = 0
+    private var claimedLayout = 0
+    private var skillNames: Set<String> = []
     /// Rows expanded before the transcript was open, or while the Host was
     /// not connected, read once both are.
-    @ObservationIgnored private var waitingOutputs: Set<ChatEntryID> = []
+    private var waitingOutputs: Set<ChatEntryID> = []
     /// What the Console last said of the Host's connection. A saved
     /// conversation keeps following offline, but its outputs cannot be read.
-    @ObservationIgnored private var isHostConnected = true
+    private var isHostConnected = true
     /// The latest read for each row, kept so tests can wait for them.
-    @ObservationIgnored private var outputReads: [ChatEntryID: Task<Void, Never>] = [:]
+    private var outputReads: [ChatEntryID: Task<Void, Never>] = [:]
     /// What each listed Workflow's journal showed, by the Workflow's id.
-    @ObservationIgnored private var workflowProgress: [String: ChatWorkflowProgress] = [:]
+    private var workflowProgress: [String: ChatWorkflowProgress] = [:]
 
     private struct TrackedSend {
         let id: UUID

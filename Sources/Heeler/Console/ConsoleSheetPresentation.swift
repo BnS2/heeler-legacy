@@ -46,7 +46,7 @@ struct ConsoleSheetPresentationModifier: ViewModifier {
             if fitsContent {
                 content.modifier(ConsoleFittedFormModifier(presentation: presentation))
             } else {
-                content.presentationSizing(.form)
+                content.presentationSizingFormCompat()
             }
         case .inheritedSheet:
             // Keep each destination's existing detents (including Rename's medium sheet).
@@ -62,19 +62,23 @@ struct ConsoleSheetPresentationModifier: ViewModifier {
 struct ConsoleFittedFormModifier: ViewModifier {
     let presentation: ConsoleSheetPresentation
 
-    @State private var fit = ConsoleSheetFit()
+    @StateObject private var fit = ConsoleSheetFit()
 
     @ViewBuilder
     func body(content: Content) -> some View {
         switch presentation {
         case .form:
-            content
+            let base = content
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
                     fit.contentLaidOut($0)
                 }
                 .frame(idealHeight: fit.height)
-                .environment(fit)
-                .presentationSizing(ContentFittedFormSizing())
+                .environment(\.consoleSheetFit, fit)
+            if #available(iOS 18, *) {
+                base.presentationSizing(ContentFittedFormSizing())
+            } else {
+                base
+            }
         case .inheritedSheet:
             content
         }
@@ -100,7 +104,7 @@ struct ConsoleStatusSheetPresentationModifier: ViewModifier {
         case .form:
             content
                 .modifier(ConsoleFittedFormModifier(presentation: presentation))
-                .presentationBackground(Self.formBackground)
+                .presentationBackgroundCompat(Self.formBackground)
         case .inheritedSheet:
             content
                 .presentationDetents([.fraction(0.6), .large])
@@ -115,14 +119,13 @@ struct ConsoleStatusSheetPresentationModifier: ViewModifier {
 /// sheet keeps the tallest it has shown: a longer page grows it, and going
 /// back or content leaving never shrinks it under the pointer.
 @MainActor
-@Observable
-final class ConsoleSheetFit {
+final class ConsoleSheetFit: ObservableObject {
     /// The height the form proposes; nil until a page has reported.
-    private(set) var height: CGFloat?
+    @Published private(set) var height: CGFloat?
     /// The tallest any page has needed since the sheet placed it.
-    @ObservationIgnored private var tallestPage: CGFloat = 0
+    private var tallestPage: CGFloat = 0
     /// How much taller than proposed the sheet lays its content out.
-    @ObservationIgnored private var margin: CGFloat = 0
+    private var margin: CGFloat = 0
 
     /// A page needs `height`. Until the sheet places a page under a
     /// proposal, reports only seed one: before that a page's insets are the
@@ -167,11 +170,11 @@ private struct ConsoleSheetPage: ViewModifier {
         let isPlaced: Bool
     }
 
-    @Environment(ConsoleSheetFit.self) private var fit: ConsoleSheetFit?
+    @Environment(\.consoleSheetFit) private var fit
     @State private var measure = ConsoleSheetPageMeasure()
 
     func body(content: Content) -> some View {
-        content.onScrollGeometryChange(for: Geometry.self) { geometry in
+        if #available(iOS 18, *) { content.onScrollGeometryChange(for: Geometry.self) { geometry in
             Geometry(
                 content: geometry.contentSize.height + geometry.contentInsets.top,
                 bottomInset: geometry.contentInsets.bottom,
@@ -180,7 +183,7 @@ private struct ConsoleSheetPage: ViewModifier {
             let height = measure.height(
                 content: page.content, bottomInset: page.bottomInset, isPlaced: page.isPlaced)
             fit?.report(height, isPlaced: page.isPlaced)
-        }
+        } } else { content }
     }
 }
 
@@ -211,6 +214,7 @@ final class ConsoleSheetPageMeasure {
 /// A form sheet's width, and its content's height: shorter than a form
 /// when the content is, and taller when it needs to be, up to a page
 /// sheet's height, which the system fits to the window.
+@available(iOS 18, *)
 struct ContentFittedFormSizing: PresentationSizing {
     func proposedSize(
         for root: PresentationSizingRoot, context: PresentationSizingContext

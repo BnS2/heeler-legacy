@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// The remote object one interactive PTY Attach resolves.
 ///

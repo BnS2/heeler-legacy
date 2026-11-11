@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import UIKit
 import UniformTypeIdentifiers
 
@@ -56,8 +56,7 @@ struct AttachLinkOpenFailure: Identifiable, Equatable {
 /// forwards UI events. The Composer and its staging belong to the Agent's
 /// `AgentComposerSession`, which outlives any one Attach.
 @MainActor
-@Observable
-final class AgentAttachStore {
+final class AgentAttachStore: ObservableObject {
     /// Attach presence and leave cleanup are related, but not interchangeable.
     /// A recovery may become invalid off stage before SwiftUI delivers the
     /// real leave callback. That transition requires a later full terminal
@@ -77,46 +76,46 @@ final class AgentAttachStore {
     /// on departing screens as well as staying ones.
     private let isOnStage: () -> Bool
 
-    private(set) var terminal: AttachTerminalStore
+    @Published private(set) var terminal: AttachTerminalStore
     let input: TerminalInputController
     let close: ClosePaneStore
-    private(set) var attachLinkOpenFailure: AttachLinkOpenFailure?
+    @Published private(set) var attachLinkOpenFailure: AttachLinkOpenFailure?
 
-    private var transportGeneration: UInt64?
-    private var lifecycleTask: Task<Void, Never>?
-    private var lifecycleID: UInt64 = 0
-    private var attachLinkOpenTask: Task<Void, Never>?
-    private var attachLinkOpenID: UInt64 = 0
-    private var lifecycleState = LifecycleState.active
+    @Published private var transportGeneration: UInt64?
+    @Published private var lifecycleTask: Task<Void, Never>?
+    @Published private var lifecycleID: UInt64 = 0
+    @Published private var attachLinkOpenTask: Task<Void, Never>?
+    @Published private var attachLinkOpenID: UInt64 = 0
+    @Published private var lifecycleState = LifecycleState.active
     /// Owns recovery presentation for the latest scheduled replacement. Its
     /// predecessor may still be stopping, but an older queued transition cannot
     /// clear the token a newer transition installed. This is presentation
     /// state, not a transport claim: while it exists the screen must show
     /// recovery instead of the predecessor's stale `.live` state and its empty
     /// overlay.
-    private var terminalRecoveryOwner: UUID?
+    @Published private var terminalRecoveryOwner: UUID?
     /// A possible-suspension activation observed by the selected screen is also
     /// a claim that this lifecycle is current. SwiftUI can still deliver a
     /// delayed disappear from the foreground mount after that claim, without a
     /// balancing appear. Only that recovery may survive such an on-stage leave;
     /// ordinary replacement and rejoin transitions keep their existing teardown
     /// semantics.
-    private var activationRecoveryOwnsOnStageLifecycle = false
+    @Published private var activationRecoveryOwnsOnStageLifecycle = false
     /// Joins the independently scheduled readiness projection and terminal
     /// waiter for the exact foreground-recovery pipeline.
-    private var activationRecovery = TerminalRecoveryGenerationLatch()
+    @Published private var activationRecovery = TerminalRecoveryGenerationLatch()
     /// The app activation this store last answered. A screen rebuilt over
     /// the same store, as on the way back from Changes, reports the latest
     /// activation again; answering it twice would replace a live terminal.
-    private var answeredActivation: UInt64?
+    @Published private var answeredActivation: UInt64?
     #if DEBUG
     /// Created at the possible-suspension activation edge and retained until
     /// the replacement that actually publishes adopts it, or recovery is
     /// definitively abandoned off stage.
-    private(set) var pendingForegroundRecoveryTrace: AttachRestorationTrace?
+    @Published private(set) var pendingForegroundRecoveryTrace: AttachRestorationTrace?
     /// Replacement pipelines published so far: a transition that lost
     /// ownership must publish none.
-    private(set) var publishedReplacementCount = 0
+    @Published private(set) var publishedReplacementCount = 0
     #endif
 
     init(

@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Console Agent-list presentations. Flat remains the default so
 /// introducing grouped-list support does not change the existing surface
@@ -392,8 +392,7 @@ struct ConsoleHostAgentStatusCount: Identifiable, Equatable {
 /// Collapsed Host ids are deliberately retained when a Host disconnects or
 /// leaves the catalog so a reconnect or later return restores the choice.
 @MainActor
-@Observable
-final class ConsoleListPresentationStore {
+final class ConsoleListPresentationStore: ObservableObject {
     /// Hosts follow catalog order; Workspaces follow their first Agent in
     /// the supplied priority order. Grouping never re-sorts Agents or pins.
     /// `savedStructures` holds the Workspace structure of each Host whose
@@ -522,7 +521,7 @@ final class ConsoleListPresentationStore {
     private static let statusFilterDefaultsKey = "console-list.status-filter"
 
     /// The statuses the Agents list shows; empty shows every Agent.
-    private(set) var statusFilter: Set<ConsoleAgentStatusFilter>
+    @Published private(set) var statusFilter: Set<ConsoleAgentStatusFilter>
 
     func toggleStatusFilter(_ filter: ConsoleAgentStatusFilter) {
         if !statusFilter.insert(filter).inserted { statusFilter.remove(filter) }
@@ -534,11 +533,11 @@ final class ConsoleListPresentationStore {
         defaults.removeObject(forKey: Self.statusFilterDefaultsKey)
     }
 
-    private(set) var mode: ConsoleListPresentationMode
-    private var collapsedHostIDs: Set<Host.ID>
-    private var collapsedWorkspaceIDs: Set<ConsoleWorkspaceSection.ID>
+    @Published private(set) var mode: ConsoleListPresentationMode
+    @Published private var collapsedHostIDs: Set<Host.ID>
+    @Published private var collapsedWorkspaceIDs: Set<ConsoleWorkspaceSection.ID>
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

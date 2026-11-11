@@ -9,7 +9,7 @@ import UniformTypeIdentifiers
 /// happens next (the network then signs in or connects). Optional settings
 /// are one push away, in Advanced.
 struct OverlayNetworkFormView: View {
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     var editing: OverlayNetwork?
     /// Called with a new network's id after it is saved, before the form
     /// closes; not called when editing.

@@ -1,9 +1,8 @@
+import Combine
 import Foundation
-import Observation
 
 @MainActor
-@Observable
-final class WorktreeDetailStore {
+final class WorktreeDetailStore: ObservableObject {
     enum BranchPresentation: Equatable {
         case loading
         case named(String)
@@ -24,16 +23,16 @@ final class WorktreeDetailStore {
     let workspaceLabel: String
     let checkout: RepositoryCheckout
 
-    private(set) var branch: BranchPresentation = .loading
-    private(set) var confirmation: WorktreeRemovalConfirmation?
-    private(set) var removalPhase: RemovalPhase = .idle
-    private(set) var showsFeedback = false
+    @Published private(set) var branch: BranchPresentation = .loading
+    @Published private(set) var confirmation: WorktreeRemovalConfirmation?
+    @Published private(set) var removalPhase: RemovalPhase = .idle
+    @Published private(set) var showsFeedback = false
     /// The refusal leaves uncommitted work possible, so its alert can offer
     /// Changes.
-    private(set) var refusalOffersChanges = false
+    @Published private(set) var refusalOffersChanges = false
     /// The command that forces the refused removal, for the alert's Copy
     /// Command.
-    private(set) var refusalCommand: String?
+    @Published private(set) var refusalCommand: String?
 
     /// Recovery commands target the same endpoint or session as the removal.
     private let sessionName: String
@@ -45,19 +44,19 @@ final class WorktreeDetailStore {
     /// What removing would lose, read where a removal forces its way past it.
     /// Nil where nothing forces one: Herdr TUI Hosts refuse instead.
     private let readRemovalRisk: ((WorktreeRemovalRequest) async throws -> WorktreeRemovalRisk?)?
-    private var removalRisk: WorktreeRemovalRisk?
+    @Published private var removalRisk: WorktreeRemovalRisk?
     /// The other Workspaces on this checkout, whose Terminals a removal leaves
     /// running. Nil where a removal closes the checkout's one Workspace.
     private let otherWorkspaces: (() -> [String])?
     /// Remove waits while this holds, since a confirmation can only warn of what
     /// has been read.
-    private var awaitsRemovalRisk: Bool
-    private var didLoadBranch = false
+    @Published private var awaitsRemovalRisk: Bool
+    @Published private var didLoadBranch = false
     /// The confirmed request, captured synchronously by the confirmation action
     /// and consumed exactly once when its asynchronous removal task starts.
-    private var pendingRemoval: WorktreeRemovalRequest?
+    @Published private var pendingRemoval: WorktreeRemovalRequest?
     /// Set while the sheet is away, where its alert would reach nobody.
-    private var reportAfterLeaving: ((String) -> Void)?
+    @Published private var reportAfterLeaving: ((String) -> Void)?
 
     init(
         request: WorktreeRemovalRequest,

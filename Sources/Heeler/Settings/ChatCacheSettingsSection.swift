@@ -2,16 +2,15 @@ import SwiftUI
 
 /// How much Chat keeps on this device, and the way to drop it.
 @MainActor
-@Observable
-final class ChatCacheSettingsModel {
+final class ChatCacheSettingsModel: ObservableObject {
     enum State: Equatable {
         case measuring
         case measured(Int64)
         case clearing
     }
 
-    private(set) var state: State = .measuring
-    @ObservationIgnored private let cache: any ChatTranscriptCache
+    @Published private(set) var state: State = .measuring
+    private let cache: any ChatTranscriptCache
 
     init(cache: any ChatTranscriptCache) {
         self.cache = cache

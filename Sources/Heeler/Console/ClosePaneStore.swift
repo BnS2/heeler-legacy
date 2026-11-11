@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Agent detail screen's close-pane action (#13, User Story 9): closing a
 /// Pane is destructive — a Done agent must not be destroyed by a stray tap —
@@ -14,8 +14,7 @@ import Observation
 /// transport. The Console row's swipe-to-close is gated behind its own
 /// confirmation as well.
 @MainActor
-@Observable
-final class ClosePaneStore {
+final class ClosePaneStore: ObservableObject {
     enum State: Equatable {
         /// No close in flight; the pane is untouched (the cancel path stays
         /// here).
@@ -29,7 +28,7 @@ final class ClosePaneStore {
         case closed
     }
 
-    private(set) var state: State = .idle
+    @Published private(set) var state: State = .idle
 
     /// The Agent's display name, for the confirmation dialog's message so the
     /// user sees exactly which agent they are about to destroy.
@@ -39,9 +38,9 @@ final class ClosePaneStore {
     /// In-flight guard flipped synchronously before the first await, so a
     /// double-tap cannot fire the close twice through the window before
     /// `state == .closing` disables the button (mirrors #10/#12).
-    private var isClosing = false
+    @Published private var isClosing = false
     /// Set while the screen is away, where a failure's alert would reach nobody.
-    private var reportAfterLeaving: ((String) -> Void)?
+    @Published private var reportAfterLeaving: ((String) -> Void)?
 
     init(paneTitle: String, close: @escaping () async throws -> Void) {
         self.paneTitle = paneTitle

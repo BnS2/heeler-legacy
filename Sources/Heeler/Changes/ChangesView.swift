@@ -5,7 +5,7 @@ import SwiftUI
 /// states, and the document model owns every string, so nothing here knows
 /// git.
 struct ChangesView: View {
-    let store: ChangesStore
+    @ObservedObject var store: ChangesStore
     /// A pull shows the system's own indicator; the bar's is for the rest.
     @State private var isPulling = false
     /// Try Again's read. Like the first read's `.task`, it ends when Changes
@@ -19,7 +19,10 @@ struct ChangesView: View {
             // A read resolving another Checkout replaces the whole view,
             // scroll position included; a refresh of the same one keeps it.
             .id(store.checkout)
-            .navigationDestination(item: diffRoute) { route in
+            .navigationDestination(isPresented: Binding(
+                get: { diffRoute.wrappedValue != nil },
+                set: { if !$0 { store.closeDiff() } })) {
+              if let route = diffRoute.wrappedValue {
                 FileDiffView(store: route.store)
                     .environment(\.changesReferenceActions, ChangesReferenceActions(store: store))
                     .navigationTitle(route.store.file.displayPath)
@@ -35,6 +38,7 @@ struct ChangesView: View {
                     .task { await store.followAgentStatus() }
                     .modifier(ChangesScreenAppearance(presence: presence))
                     .wearsTheme(fileDiffTheme ?? .system)
+              }
             }
             .task { await store.appear() }
             .task { await store.followAgentStatus() }
@@ -96,7 +100,7 @@ struct ChangesView: View {
         }
         .listStyle(.insetGrouped)
         // The groups read as one list, as Source Control's do.
-        .listSectionSpacing(.compact)
+        .listSectionSpacingCompactCompat()
         // One ground for every state, so the first read lands without a flash.
         .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))

@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// Separates OpenSSH forwarding and session admission while enforcing one
 /// finite ceiling over every live SSH channel on a Host connection.

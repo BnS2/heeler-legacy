@@ -205,8 +205,8 @@ private struct AgentDetailChangesVisibility: ViewModifier {
         content
             .onAppear { show(changes) }
             .onDisappear { show(nil) }
-            .onChange(of: changes?.agent.id) { _, _ in show(changes) }
-            .onChange(of: changes?.agent.directory == nil) { _, lacksDirectory in
+            .onChangeCompat(of: changes?.agent.id) { _, _ in show(changes) }
+            .onChangeCompat(of: changes?.agent.directory == nil) { _, lacksDirectory in
                 if !lacksDirectory, let changes {
                     changes.rows.agentReportedDirectory(changes.agent)
                 }

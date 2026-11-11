@@ -62,7 +62,8 @@ protocol LiveActivityControlling: AnyObject {
 /// references, so Swift 6 never treats them as MainActor-isolated bindings
 /// when handing them to ActivityKit's nonisolated update/end/async APIs.
 @MainActor
-final class ActivityKitLiveActivityController: LiveActivityControlling {
+@available(iOS 16.2, *)
+final class ActivityKitLiveActivityControllerImpl: LiveActivityControlling {
     var areEnabled: Bool {
         ActivityAuthorizationInfo().areActivitiesEnabled
     }
@@ -180,9 +181,10 @@ final class ActivityKitLiveActivityController: LiveActivityControlling {
         continuation.finish()
     }
 }
-#else
+#endif
+
 @MainActor
-final class ActivityKitLiveActivityController: LiveActivityControlling {
+final class NoopLiveActivityController: LiveActivityControlling {
     var areEnabled: Bool { false }
 
     func request(
@@ -210,4 +212,12 @@ final class ActivityKitLiveActivityController: LiveActivityControlling {
         AsyncStream { $0.finish() }
     }
 }
-#endif
+
+/// iOS 16: ActivityKit needs iOS 16.2; older systems get a controller that never starts one.
+@MainActor
+func makeLiveActivityController() -> any LiveActivityControlling {
+    #if canImport(ActivityKit)
+    if #available(iOS 16.2, *) { return ActivityKitLiveActivityControllerImpl() }
+    #endif
+    return NoopLiveActivityController()
+}

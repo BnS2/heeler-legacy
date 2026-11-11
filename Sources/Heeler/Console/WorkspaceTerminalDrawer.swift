@@ -11,7 +11,7 @@ import SwiftUI
 struct WorkspaceTerminalDrawer: View {
     let terminals: [ConsoleTerminal]
     let selectedPaneID: String
-    let edgeDock: EdgeDockSettings
+    @ObservedObject var edgeDock: EdgeDockSettings
     var palette: TerminalThemePalette = .system
     /// `var` so a host can wrap it: Agent detail and the Shell Terminal
     /// capture the keyboard state before a route leaves their screen.
@@ -145,7 +145,7 @@ struct WorkspaceTerminalDrawer: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         }
         .foregroundStyle(palette.foreground)
-        .onChange(of: selectedPaneID) { _, _ in
+        .onChangeCompat(of: selectedPaneID) { _, _ in
             if expanded { setExpanded(false) }
         }
     }
@@ -232,7 +232,7 @@ struct WorkspaceTerminalDrawer: View {
                 .padding(.horizontal, 6)
                 .padding(.bottom, Self.panelBottomInset)
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .scrollBounceBasedOnSizeCompat()
             if let onNewTerminal {
                 newTerminalFooter(onNewTerminal)
             }

@@ -1,12 +1,11 @@
+import Combine
 import Foundation
-import Observation
 
 /// The only application-level writer for Attach input. Keyboard input, terminal
 /// controls, reviewed Paste, and Snippets all cross this boundary so session
 /// ownership applies consistently.
 @MainActor
-@Observable
-final class TerminalInputController {
+final class TerminalInputController: ObservableObject {
     struct SessionGeneration: Sendable, Hashable {
         fileprivate let value: UInt64
     }
@@ -28,12 +27,12 @@ final class TerminalInputController {
         }
     }
 
-    private(set) var liveGeneration: SessionGeneration?
-    private(set) var pendingPaste: PasteReview?
-    private(set) var pasteErrorMessage: String?
+    @Published private(set) var liveGeneration: SessionGeneration?
+    @Published private(set) var pendingPaste: PasteReview?
+    @Published private(set) var pasteErrorMessage: String?
     /// A retained terminal remains readable while its Host is unproven.
     /// Input during that interval is rejected, never held for reconnection.
-    var isEnabled = true {
+    @Published var isEnabled = true {
         didSet {
             if !isEnabled { discardPendingScroll?() }
             if isEnabled, let readyGeneration { sessionDidBecomeLive(readyGeneration) }
@@ -44,26 +43,26 @@ final class TerminalInputController {
     /// writer is replaced, so entries cannot outlive the session they describe.
     let userMessageIndex = AttachUserMessageIndex()
 
-    private var nextGeneration: UInt64 = 0
-    private var writer: ((Data) -> Void)?
-    private var acknowledgedWriter: (@Sendable (Data) async throws -> Void)?
-    private var scroller: ((Data, Int) -> Void)?
-    private var discardPendingScroll: (() -> Void)?
-    private var pendingPasteText: String?
+    @Published private var nextGeneration: UInt64 = 0
+    @Published private var writer: ((Data) -> Void)?
+    @Published private var acknowledgedWriter: (@Sendable (Data) async throws -> Void)?
+    @Published private var scroller: ((Data, Int) -> Void)?
+    @Published private var discardPendingScroll: (() -> Void)?
+    @Published private var pendingPasteText: String?
     /// Captured when the paste is requested rather than read again at confirm
     /// time: the review sheet is what the user is looking at, so the framing
     /// they agreed to is the framing that was true when they were shown it.
-    private var pendingPasteIsBracketed = false
+    @Published private var pendingPasteIsBracketed = false
     /// A channel can own a writer before the Attach client is ready for input.
-    private var readyGeneration: SessionGeneration?
+    @Published private var readyGeneration: SessionGeneration?
     /// The session whose Attach said its first paint is in.
-    private var paintedGeneration: SessionGeneration?
-    private var heldInsertion = ""
+    @Published private var paintedGeneration: SessionGeneration?
+    @Published private var heldInsertion = ""
     private enum SessionMilestone {
         case ready
         case painted
     }
-    @ObservationIgnored private var sessionWaiters:
+    private var sessionWaiters:
         [UUID: (milestone: SessionMilestone, continuation: CheckedContinuation<Void, Never>)] = [:]
 
     var canConfirmPaste: Bool {

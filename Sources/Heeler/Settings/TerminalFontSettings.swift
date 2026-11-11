@@ -1,6 +1,6 @@
+import Combine
 import CoreText
 import Foundation
-import Observation
 import UIKit
 
 enum TerminalFontOption: String, CaseIterable, Identifiable, Sendable {
@@ -87,15 +87,14 @@ enum TerminalFontCatalog {
 /// The app-wide terminal font family. Like `TerminalZoomSettings`, it applies
 /// to current and future Attach terminals without reconnecting.
 @MainActor
-@Observable
-final class TerminalFontSettings {
+final class TerminalFontSettings: ObservableObject {
     private static let defaultsKey = "terminal-font-family"
 
-    private(set) var selection: TerminalFontOption
+    @Published private(set) var selection: TerminalFontOption
     /// libghostty's default, bundled options whose face files are present in
     /// the bundle, and iOS faces the system has.
     let availableOptions: [TerminalFontOption]
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard, bundle: Bundle = .main) {
         self.defaults = defaults

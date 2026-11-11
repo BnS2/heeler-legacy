@@ -56,7 +56,7 @@ struct RenameSheetView: View {
                     }
                 }
             }
-            .onChange(of: store.state) {
+            .onChangeCompat(of: store.state) { _, _ in
                 if store.state == .renamed { dismiss() }
             }
             .interactiveDismissDisabled(!store.canDismiss)

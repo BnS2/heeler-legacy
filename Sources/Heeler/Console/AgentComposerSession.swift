@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// One Agent's Composer and the staging its picks and drops upload through.
 ///
@@ -84,21 +84,20 @@ final class AgentComposerSession {
 /// transcript's value for it when it was made: once the transcript records
 /// another, the transcript's stands again.
 @MainActor
-@Observable
-final class AgentSettingOverrides {
+final class AgentSettingOverrides: ObservableObject {
     enum Setting: Int { case permissionMode, model, effort }
 
-    private var values: [String?] = [nil, nil, nil]
-    private var recorded: [String?] = [nil, nil, nil]
+    @Published private var values: [String?] = [nil, nil, nil]
+    @Published private var recorded: [String?] = [nil, nil, nil]
     /// A switch's paste or key got no answer, so it may still reach the
     /// Agent's input; the next input waits until the Host answers a read.
-    var lastSwitchHasNoAnswer = false
+    @Published var lastSwitchHasNoAnswer = false
     /// Shared by all Chat windows while a menu reads or changes the terminal.
-    var switchingSetting: Setting?
+    @Published var switchingSetting: Setting?
 
-    private(set) var permissionLaunch: ClaudePermissionMode.Launch?
-    private var livePermissionMode: String?
-    private var bypassMissingFromCycle: ClaudePermissionMode.ProcessIdentity?
+    @Published private(set) var permissionLaunch: ClaudePermissionMode.Launch?
+    @Published private var livePermissionMode: String?
+    @Published private var bypassMissingFromCycle: ClaudePermissionMode.ProcessIdentity?
 
     var allowsBypassPermissions: Bool {
         if livePermissionMode == "bypassPermissions" { return true }

@@ -1,4 +1,4 @@
-import Observation
+import Combine
 import UIKit
 
 /// Changes pushed over Agent detail. Held in Agent detail's own state, so it
@@ -11,23 +11,22 @@ import UIKit
 /// reading again, and any open Changes read in the row's place while their
 /// detail is on screen; closing hands their read back to the row.
 @MainActor
-@Observable
-final class AgentChangesPresentation {
+final class AgentChangesPresentation: ObservableObject {
     /// The open Changes; nil while Agent detail shows its terminal. The
     /// push follows it, and the system's Back closes it.
-    private(set) var store: ChangesStore?
-    @ObservationIgnored private var pendingInsertion: String?
+    @Published private(set) var store: ChangesStore?
+    private var pendingInsertion: String?
     /// Whether the row's store currently counts the open Changes as reading
     /// in its place.
-    @ObservationIgnored private var isStandingInForRow = false
+    private var isStandingInForRow = false
     /// Changes' screens on screen: the list, and a file's diff pushed over
     /// it. Changes as a whole come with the first and leave with the last.
-    @ObservationIgnored private var shownScreens = 0
+    private var shownScreens = 0
 
     /// Nil follows the Agent. A Worktree directory stays fixed for the
     /// life of that store, even if the Agent later moves.
-    @ObservationIgnored private let makeStoreIn: @MainActor (String?) -> ChangesStore
-    @ObservationIgnored private let row: (changes: AgentRowChanges, agentID: ConsoleAgent.ID)?
+    private let makeStoreIn: @MainActor (String?) -> ChangesStore
+    private let row: (changes: AgentRowChanges, agentID: ConsoleAgent.ID)?
 
     init(
         row: (changes: AgentRowChanges, agentID: ConsoleAgent.ID)? = nil,

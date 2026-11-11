@@ -126,7 +126,7 @@ struct AgentUsageSidebar: View {
                             symbol: host.exclusion == .notConnected ? "wifi.slash" : "desktopcomputer",
                             subtitle: host.reason, value: nil, share: nil)
                             .opacity(0.5)
-                            .selectionDisabled()
+                            .selectionDisabledCompat()
                     }
                 } header: {
                     sectionHeader(String(localized: "Not included"))

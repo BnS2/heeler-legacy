@@ -32,8 +32,7 @@ enum HerdrCoreWindowsExtensions {
 
 /// The confirmation's state: which folders, then the writes.
 @MainActor
-@Observable
-final class HerdrCoreWindowsExtensionFlow: Identifiable {
+final class HerdrCoreWindowsExtensionFlow: ObservableObject, Identifiable {
     enum Phase: Equatable {
         case locating
         case ready(folders: [String])
@@ -42,7 +41,7 @@ final class HerdrCoreWindowsExtensionFlow: Identifiable {
         case failed(String)
     }
 
-    private(set) var phase = Phase.locating
+    @Published private(set) var phase = Phase.locating
     private let locate: @MainActor () async throws -> [String]
     private let write: @MainActor ([String]) async throws -> Void
 
@@ -101,7 +100,7 @@ struct HerdrCoreWindowsExtensionSheet: View {
                 }
         }
         .presentationDetents([.medium, .large])
-        .presentationBackground(ConsoleStatusSheetPresentationModifier.formBackground)
+        .presentationBackgroundCompat(ConsoleStatusSheetPresentationModifier.formBackground)
     }
 
     @ViewBuilder

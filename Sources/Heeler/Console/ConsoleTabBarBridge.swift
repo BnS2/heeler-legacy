@@ -103,7 +103,7 @@ struct ConsoleTabBarBridge: UIViewRepresentable {
         /// Without animation either way: hidden at once for the reasons
         /// above, and shown as SwiftUI shows it.
         private func applyVisibility() {
-            guard window != nil, let controller = tabBarController,
+            guard #available(iOS 18, *), window != nil, let controller = tabBarController,
                 controller.isTabBarHidden != request.hidesBar
             else { return }
             controller.setTabBarHidden(request.hidesBar, animated: false)
@@ -127,7 +127,7 @@ struct ConsoleTabBarBridge: UIViewRepresentable {
         /// Hides and shows the bar within one turn of the run loop, so
         /// nothing renders in between and the visibility ends where it was.
         private func settleSafeArea() {
-            guard window != nil, let controller = tabBarController else { return }
+            guard #available(iOS 18, *), window != nil, let controller = tabBarController else { return }
             let isHidden = controller.isTabBarHidden
             controller.setTabBarHidden(!isHidden, animated: false)
             controller.setTabBarHidden(isHidden, animated: false)

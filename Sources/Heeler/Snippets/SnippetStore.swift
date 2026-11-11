@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 enum SnippetStoreError: Error, Equatable {
     /// `update`/`remove` addressed a Snippet id the catalog does not contain.
@@ -17,8 +17,7 @@ enum SnippetStoreError: Error, Equatable {
 /// your thumb knows where it is, and a list that re-sorts itself destroys
 /// exactly that.
 @MainActor
-@Observable
-final class SnippetStore {
+final class SnippetStore: ObservableObject {
     private static let defaultsKey = "snippets"
     private static let catalogVersion = 1
 
@@ -27,10 +26,10 @@ final class SnippetStore {
         let snippets: [Snippet]
     }
 
-    private(set) var snippets: [Snippet]
-    private(set) var catalogLoadError: SnippetStoreError?
+    @Published private(set) var snippets: [Snippet]
+    @Published private(set) var catalogLoadError: SnippetStoreError?
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

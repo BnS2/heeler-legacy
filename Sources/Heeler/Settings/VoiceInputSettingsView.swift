@@ -8,7 +8,7 @@ import SwiftUI
 /// doesn't read Keywords keeps them on the Prompt's Vocabulary line, updated
 /// as Keywords change or the service becomes one of those.
 struct VoiceInputSettingsView: View {
-    let settings: VoiceInputSettings
+    @ObservedObject var settings: VoiceInputSettings
     /// The mic's sheet has Cancel; pushed from Settings, Back does it.
     var isSheet = false
     @State private var connection: VoiceInputServiceDraft
@@ -66,8 +66,8 @@ struct VoiceInputSettingsView: View {
                 }
             }
         }
-        .onChange(of: keywords) { syncVocabulary() }
-        .onChange(of: connection.service) { syncVocabulary() }
+        .onChangeCompat(of: keywords) { _, _ in syncVocabulary() }
+        .onChangeCompat(of: connection.service) { _, _ in syncVocabulary() }
         .navigationTitle("Voice Input")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

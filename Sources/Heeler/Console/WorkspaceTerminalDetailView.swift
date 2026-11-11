@@ -3,12 +3,12 @@ import SwiftUI
 /// Both terminal entry points share the same lazy connection and renderer.
 struct WorkspaceTerminalDetailView: View {
     let terminal: ConsoleTerminal
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     /// The core whose Terminal this screen opened on. It outlives the screen: a
     /// remount at this address is still that Terminal.
     let corePin: TerminalCorePin
     let settings: TerminalSettings
-    let activity: AppActivityCoordinator
+    @ObservedObject var activity: AppActivityCoordinator
     let onSelectAgent: (ConsoleAgent.ID) -> Void
     let onSelectTerminal: (ConsoleTerminal) -> Void
     var isSelected: () -> Bool = { true }
@@ -167,7 +167,7 @@ struct WorkspaceTerminalDetailView: View {
             }
         }
         // Another core's Agent at this address is no Agent of this Terminal's.
-        .onChange(of: terminal.agentID, initial: true) { _, agentID in
+        .onChangeCompat(of: terminal.agentID, initial: true) { _, agentID in
             if let agentID, !console.hasLeftCore(corePin, on: terminal.hostID) { onSelectAgent(agentID) }
         }
         .alert("Couldn't Close Terminal", isPresented: Binding(

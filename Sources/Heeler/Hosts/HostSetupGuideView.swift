@@ -79,7 +79,7 @@ struct HostSetupGuideView: View {
         }
         // The picker is the page's first row; a grouped Form would otherwise
         // open with a header-sized gap above it.
-        .contentMargins(.top, 12, for: .scrollContent)
+        .contentMarginsTopCompat(12)
         .readableColumnPage()
         .navigationTitle("Setup Guide")
         .navigationBarTitleDisplayMode(.inline)

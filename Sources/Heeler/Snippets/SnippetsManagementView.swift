@@ -5,7 +5,7 @@ import SwiftUI
 /// comes back on dismiss, which is what `allowsKeyboardActivation` in
 /// `HeelerTerminalView` exists to guarantee.
 struct SnippetsManagementView: View {
-    let store: SnippetStore
+    @ObservedObject var store: SnippetStore
     @State private var query = ""
     @State private var editing: SnippetEditorTarget?
 
@@ -22,7 +22,7 @@ struct SnippetsManagementView: View {
                         }
                     }
                 }
-                .navigationDestination(item: $editing) { target in
+                .navigationDestinationCompat(item: $editing) { target in
                     SnippetEditorView(store: store, target: target)
                 }
         }
@@ -32,14 +32,14 @@ struct SnippetsManagementView: View {
     private var list: some View {
         let results = store.matching(query)
         if store.catalogLoadError != nil {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("Snippets Unavailable", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(
                     String(localized: "The saved Snippets could not be read. They have been left untouched rather than overwritten, so nothing is lost."))
             }
         } else if store.snippets.isEmpty {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Snippets", systemImage: "quote.bubble")
             } description: {
                 Text("Keep the phrases you send an Agent over and over, one tap away.")
@@ -48,7 +48,7 @@ struct SnippetsManagementView: View {
                     .buttonStyle(.borderedProminent)
             }
         } else if results.isEmpty {
-            ContentUnavailableView.search(text: query)
+            CompatUnavailableView("No Results", systemImage: "magnifyingglass", description: Text("No results for \"\(query)\"."))
         } else {
             List {
                 ForEach(results) { @Sendable snippet in
@@ -94,7 +94,7 @@ private struct SnippetRow: View {
             if let subtitle = snippet.displaySubtitle {
                 Text(subtitle)
                     .font(.caption)
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -117,7 +117,7 @@ enum SnippetEditorTarget: Hashable, Identifiable {
 }
 
 struct SnippetEditorView: View {
-    let store: SnippetStore
+    @ObservedObject var store: SnippetStore
     let target: SnippetEditorTarget
 
     @State private var title = ""
@@ -139,7 +139,7 @@ struct SnippetEditorView: View {
             Section {
                 TextField("What you want to say", text: $body_, axis: .vertical)
                     .lineLimit(4...12)
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($isBodyFocused)

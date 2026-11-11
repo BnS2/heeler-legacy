@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// A menu or bar glyph: an SF Symbol, or one drawn from SF Symbols where
 /// none fits.
@@ -45,12 +45,11 @@ enum AgentDetailSurface: String, CaseIterable, Sendable {
 /// opens, so a choice made in one window does not swap another window's
 /// screen from under it. Unknown stored values fall back to Terminal.
 @MainActor
-@Observable
-final class AgentDetailSurfaceSettings {
+final class AgentDetailSurfaceSettings: ObservableObject {
     private static let defaultsKey = "agent.detail-surface"
 
-    private(set) var preferred: AgentDetailSurface
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var preferred: AgentDetailSurface
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Owns the Console's navigation path and lands Agent Notification taps on
 /// the right Agent detail (#74, #179). A tap can arrive before the tapped
@@ -8,19 +8,18 @@ import Observation
 /// pane appears, the user navigates somewhere themselves, or a grace window
 /// elapses. Falling back always means the Console, quietly: never an alert.
 @MainActor
-@Observable
-final class AgentNotificationRouter {
+final class AgentNotificationRouter: ObservableObject {
     /// The Console's NavigationStack path; ConsoleView binds to it, so user
     /// navigation and deep links share one source of truth.
-    var path: [ConsoleAgent.ID] = []
+    @Published var path: [ConsoleAgent.ID] = []
 
     /// A tap still waiting for its pane to appear in the Console.
-    private(set) var pendingTarget: AgentNotificationTarget?
+    @Published private(set) var pendingTarget: AgentNotificationTarget?
 
     /// Counts taps that land on the Agent the path already shows. The path
     /// does not change for them, so the Console watches this instead to
     /// bring that Agent forward from another tab or from under a sheet.
-    private(set) var repeatLandings = 0
+    @Published private(set) var repeatLandings = 0
 
     /// Whether the Console's latest Agent list has this row, as last fed
     /// through `agentsDidChange`.
@@ -28,9 +27,9 @@ final class AgentNotificationRouter {
         knownAgentIDs.contains(id)
     }
 
-    @ObservationIgnored private var knownAgentIDs: Set<ConsoleAgent.ID> = []
-    @ObservationIgnored private var pendingExpiry: Task<Void, Never>?
-    @ObservationIgnored private let pendingGrace: Duration
+    private var knownAgentIDs: Set<ConsoleAgent.ID> = []
+    private var pendingExpiry: Task<Void, Never>?
+    private let pendingGrace: Duration
 
     /// `pendingGrace` bounds how long a tap may wait for its pane: long
     /// enough for a cold launch to connect and sync its Hosts, short enough

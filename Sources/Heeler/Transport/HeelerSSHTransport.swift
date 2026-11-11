@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 import HeelerOverlay
 import HeelerSSH
 

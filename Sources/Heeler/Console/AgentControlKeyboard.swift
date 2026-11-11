@@ -5,7 +5,7 @@ import UIKit
 /// Page changes never update the keyboard inset or recreate the Composer.
 struct AgentControlKeyboard: View {
     let isEnabled: Bool
-    let keyboardControl: TerminalKeyboardControl
+    @ObservedObject var keyboardControl: TerminalKeyboardControl
     let send: (AgentQuickKey) -> Void
     @State private var page: Page = .agent
     @GestureState private var horizontalDrag: CGFloat = 0
@@ -78,7 +78,7 @@ struct AgentControlKeyboard: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .clipped()
         }
-        .onChange(of: page) { _, _ in clearModifiers() }
+        .onChangeCompat(of: page) { _, _ in clearModifiers() }
         .onDisappear { clearModifiers() }
     }
 

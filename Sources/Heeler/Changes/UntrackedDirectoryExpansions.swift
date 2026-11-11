@@ -1,29 +1,28 @@
+import Combine
 import Foundation
-import Observation
 
 /// Which untracked directories are expanded, and what their listing returned.
 /// A successful Changes read drops every listing still in flight. Collapsing
 /// one directory drops only that directory's listing.
 @MainActor
-@Observable
-final class UntrackedDirectoryExpansions {
+final class UntrackedDirectoryExpansions: ObservableObject {
     enum Expansion: Equatable {
         case loading
         case loaded(UntrackedDirectoryListing)
         case failed(String)
     }
 
-    @ObservationIgnored private let list:
+    private let list:
         @Sendable (UntrackedDirectoryRequest) async throws -> UntrackedDirectoryListing
     /// Bumped only by ``collapseAll()``. An individual toggle does not
     /// invalidate a listing of a different directory.
-    @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var nextRequestID = 0
+    private var generation = 0
+    private var nextRequestID = 0
     /// The listing each directory is waiting on. Nil after that directory
     /// collapses, so a late result cannot fill a newer open.
-    @ObservationIgnored private var requestIDs: [Data: Int] = [:]
-    @ObservationIgnored private var tasks: [Data: Task<UntrackedDirectoryListing, any Error>] = [:]
-    private(set) var expansions: [Data: Expansion] = [:]
+    private var requestIDs: [Data: Int] = [:]
+    private var tasks: [Data: Task<UntrackedDirectoryListing, any Error>] = [:]
+    @Published private(set) var expansions: [Data: Expansion] = [:]
 
     init(
         list: @escaping @Sendable (UntrackedDirectoryRequest) async throws ->

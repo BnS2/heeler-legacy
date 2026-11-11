@@ -34,7 +34,7 @@ struct TerminalFullKeyboardLayout {
 /// Its six rows always fit the height supplied by the measured keyboard dock.
 struct TerminalFullKeyboard: View {
     let isEnabled: Bool
-    let keyboardControl: TerminalKeyboardControl
+    @ObservedObject var keyboardControl: TerminalKeyboardControl
     let send: (AgentQuickKey) -> Void
     @State private var showsSymbols = false
     @State private var showsFunctionKeys = false

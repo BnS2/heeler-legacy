@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import Synchronization
 import Testing
 import UIKit
 

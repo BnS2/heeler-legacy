@@ -47,7 +47,7 @@ struct ChatCommandSuggestions: View {
                 }
             }
             .frame(height: min(listHeight, Self.maximumListHeight))
-            .scrollBounceBehavior(.basedOnSize)
+            .scrollBounceBasedOnSizeCompat()
             Divider()
         }
         .accessibilityElement(children: .contain)
@@ -62,7 +62,7 @@ struct ChatCommandSuggestions: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("/\(command.name)")
                     .font(.subheadline.weight(.medium))
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .foregroundStyle(command.isEnabled ? .primary : .secondary)
                     .lineLimit(1)
                 if let summary = command.isEnabled ? command.summary : String(localized: "Available once the Agent is idle") {

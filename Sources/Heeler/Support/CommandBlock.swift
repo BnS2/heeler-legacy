@@ -34,7 +34,7 @@ struct CommandBlock: View {
             } label: {
                 Image(systemName: copied ? "checkmark" : "doc.on.doc")
                     .font(.footnote.weight(.semibold))
-                    .contentTransition(.symbolEffect(.replace))
+                    .contentTransitionSymbolReplaceCompat()
                     .frame(width: 44, height: 44)
                     .contentShape(.rect)
             }

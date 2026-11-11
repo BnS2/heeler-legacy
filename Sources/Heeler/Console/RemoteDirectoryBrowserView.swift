@@ -56,7 +56,7 @@ struct RemoteDirectoryBrowserView: View {
         let isSymbolicLink: Bool
     }
 
-    @Bindable var browser: RemoteDirectoryBrowser
+    @ObservedObject var browser: RemoteDirectoryBrowser
     var purpose = Purpose.workspace
     /// The owner is still acting on the folder it was given.
     var isUsing = false
@@ -159,17 +159,16 @@ struct RemoteDirectoryBrowserView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .listSectionSpacing(.compact)
-            .contentMargins(.top, 8, for: .scrollContent)
+            .listSectionSpacingCompactCompat()
+            .contentMarginsTopCompat(8)
             .searchable(
                 text: $browser.filter,
-                isPresented: $isFiltering,
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: String(localized: "Filter folders"))
             .autocorrectionDisabled()
             .textInputAutocapitalization(.never)
             .scrollDismissesKeyboard(.interactively)
-            .onChange(of: browser.currentPath) { _, _ in
+            .onChangeCompat(of: browser.currentPath) { _, _ in
                 isFiltering = false
             }
             .navigationTitle(purpose.title)
@@ -186,7 +185,7 @@ struct RemoteDirectoryBrowserView: View {
                             prefersHidingDotFolders.toggle()
                         }
                         .accessibilityValue(prefersHidingDotFolders ? "On" : "Off")
-                        .accessibilityAddTraits(.isToggle)
+                        .accessibilityIsToggleCompat()
                         .accessibilityIdentifier("directory-browser-hide-dot-folders")
                     }
                     // A view option, so it does not share Select's glass.
@@ -246,7 +245,7 @@ struct RemoteDirectoryBrowserView: View {
     @ViewBuilder
     private var emptyState: some View {
         if hidesDotFolders, !browser.visibleDirectories(hidingDotFolders: false).isEmpty {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label(browser.filter.isEmpty ? String(localized: "Dot Folders Hidden") : String(localized: "No Matching Folders"),
                     systemImage: "eye.slash")
             } description: {
@@ -258,13 +257,13 @@ struct RemoteDirectoryBrowserView: View {
                     .accessibilityIdentifier("directory-browser-show-dot-folders")
             }
         } else if browser.filter.isEmpty {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label(browser.truncated ? "No Loaded Folders" : "No Subfolders", systemImage: "folder")
             } description: {
                 Text(purpose.emptyDescription)
             }
         } else {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Matching Folders", systemImage: "magnifyingglass")
             } description: {
                 Text("No loaded folders match “\(browser.filter)”.")

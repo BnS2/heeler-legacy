@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// One exact HTTP(S) target observed during the current Attach.
 struct AttachLink: Identifiable, Equatable {
@@ -14,15 +14,14 @@ struct AttachLink: Identifiable, Equatable {
 /// discovery state. A terminal pipeline may be replaced without replacing
 /// this index; the enclosing `AgentAttachStore` clears it on leave.
 @MainActor
-@Observable
-final class AttachLinkIndex {
+final class AttachLinkIndex: ObservableObject {
     private static let maximumLinkCount = 20
 
-    private(set) var links: [AttachLink] = []
+    @Published private(set) var links: [AttachLink] = []
 
-    private var scanner = AttachLinkScanner()
-    private var streamObservedTargets: Set<String> = []
-    private var viewportOnlyTargets: Set<String> = []
+    @Published private var scanner = AttachLinkScanner()
+    @Published private var streamObservedTargets: Set<String> = []
+    @Published private var viewportOnlyTargets: Set<String> = []
 
     func receive(_ data: Data) {
         var scanner = scanner

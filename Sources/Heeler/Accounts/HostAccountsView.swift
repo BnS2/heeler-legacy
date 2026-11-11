@@ -95,7 +95,7 @@ enum AccountsListing {
 /// Host's Account file; Usage, Chat and Launch Presets read it from there.
 struct HostAccountsView: View {
     let hostName: String
-    let store: HostAccountsStore
+    @ObservedObject var store: HostAccountsStore
     /// The Host's Usage, refreshed on open so its suggestions show; nil
     /// while Usage is off.
     var usage: AgentUsageStore?
@@ -124,7 +124,7 @@ struct HostAccountsView: View {
 
     struct Browsing: Identifiable {
         let kind: SupportedAgentKind
-        let browser: RemoteDirectoryBrowser
+        @ObservedObject var browser: RemoteDirectoryBrowser
         var id: ObjectIdentifier { ObjectIdentifier(browser) }
     }
 
@@ -424,7 +424,7 @@ private struct HostAccountsTitle: ViewModifier {
 /// the directory browser's own while that is open.
 private struct HostAccountsDialogs: ViewModifier {
     let hostName: String
-    let store: HostAccountsStore
+    @ObservedObject var store: HostAccountsStore
     @Binding var renaming: HostAccountsView.Renaming?
     @Binding var draftName: String
     @Binding var editingVariable: SupportedAgentKind?
@@ -485,7 +485,7 @@ private struct HostAccountsDialogs: ViewModifier {
 /// Why the last Account change could not be saved; dismissing it clears
 /// the failure.
 struct AccountChangeFailureAlert: ViewModifier {
-    let store: HostAccountsStore
+    @ObservedObject var store: HostAccountsStore
     var isActive = true
 
     func body(content: Content) -> some View {
@@ -555,7 +555,7 @@ struct HostAccountsSheetPresenter: ViewModifier {
                 HostAccountsView(
                     hostName: entry.name, store: hostAccounts.store(entry.id), usage: entry.store, isPushed: false
                 )
-                .presentationSizing(.form)
+                .presentationSizingFormCompat()
             }
         }
     }

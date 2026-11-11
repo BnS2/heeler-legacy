@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Why a recording produced no text, and what the Composer offers next.
 struct VoiceInputFailure: Equatable, Sendable {
@@ -40,8 +40,7 @@ struct VoiceInputFailure: Equatable, Sendable {
 /// recording kept for Retry. Its text goes into the draft of the Composer
 /// it started in, and nowhere else; the store does the insertion.
 @MainActor
-@Observable
-final class ComposerVoiceInput {
+final class ComposerVoiceInput: ObservableObject {
     enum Phase: Equatable {
         case idle
         /// Asking for the microphone.
@@ -53,26 +52,26 @@ final class ComposerVoiceInput {
         case failed(VoiceInputFailure)
     }
 
-    fileprivate(set) var phase: Phase = .idle
+    @Published fileprivate(set) var phase: Phase = .idle
     /// The microphone's recent loudness, oldest first, one sample per
     /// `VoiceInputSession.levelInterval`. It stays through transcribing, so
     /// the bar keeps showing what was heard, and clears when the next
     /// recording starts.
-    fileprivate(set) var levels: [Double] = []
+    @Published fileprivate(set) var levels: [Double] = []
     /// Send waits a moment after text lands: the text can turn Stop into
     /// Send under a finger that meant Stop.
-    private(set) var isHoldingSend = false
+    @Published private(set) var isHoldingSend = false
     /// The store's cue that `takeTranscript()` has text.
-    @ObservationIgnored var onTranscript: (@MainActor () -> Void)?
-    @ObservationIgnored fileprivate weak var session: VoiceInputSession?
-    @ObservationIgnored fileprivate var recording: VoiceRecording?
-    @ObservationIgnored fileprivate var task: Task<Void, Never>?
-    @ObservationIgnored fileprivate var levelTask: Task<Void, Never>?
-    @ObservationIgnored fileprivate var generation = 0
-    @ObservationIgnored private var transcript: String?
-    @ObservationIgnored private var holdGeneration = 0
-    @ObservationIgnored private let sendHold: Duration
-    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    var onTranscript: (@MainActor () -> Void)?
+    fileprivate weak var session: VoiceInputSession?
+    fileprivate var recording: VoiceRecording?
+    fileprivate var task: Task<Void, Never>?
+    fileprivate var levelTask: Task<Void, Never>?
+    fileprivate var generation = 0
+    private var transcript: String?
+    private var holdGeneration = 0
+    private let sendHold: Duration
+    private let sleep: @Sendable (Duration) async throws -> Void
 
     init(
         sendHold: Duration = .seconds(1),
@@ -202,8 +201,7 @@ final class ComposerVoiceInput {
 /// the `ComposerVoiceInput` it started in; starting another stops it first,
 /// and its text still goes to its own Composer.
 @MainActor
-@Observable
-final class VoiceInputSession {
+final class VoiceInputSession: ObservableObject {
     /// About two minutes of speech; the WAV stays under 4 MB.
     static let maximumDuration: TimeInterval = 120
     static let minimumDuration: TimeInterval = 0.5
@@ -211,12 +209,12 @@ final class VoiceInputSession {
     static let levelInterval: Duration = .milliseconds(70)
 
     let settings: VoiceInputSettings
-    @ObservationIgnored private let recorder: any VoiceRecorder
-    @ObservationIgnored private let transcribe: @Sendable (VoiceTranscriptionRequest) async throws -> String
-    @ObservationIgnored private let now: @MainActor () -> Date
-    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
+    private let recorder: any VoiceRecorder
+    private let transcribe: @Sendable (VoiceTranscriptionRequest) async throws -> String
+    private let now: @MainActor () -> Date
+    private let sleep: @Sendable (Duration) async throws -> Void
     /// The input whose recording holds the microphone.
-    @ObservationIgnored private weak var recordingInput: ComposerVoiceInput?
+    private weak var recordingInput: ComposerVoiceInput?
 
     enum MicResult: Equatable {
         case handled

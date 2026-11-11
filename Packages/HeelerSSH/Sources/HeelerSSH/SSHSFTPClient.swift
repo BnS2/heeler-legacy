@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// One ranged read of a remote file: the bytes that range holds, plus the
 /// file's size at that moment. `length` is `nil` when the file is gone, which

@@ -90,7 +90,7 @@ struct WorktreeDetailView: View {
             } message: {
                 Text(store.feedbackMessage)
             }
-            .onChange(of: store.removalPhase) { _, phase in
+            .onChangeCompat(of: store.removalPhase) { _, phase in
                 guard case .removed(let receipt) = phase else { return }
                 onRemoved(receipt)
                 dismiss()

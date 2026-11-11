@@ -7,8 +7,8 @@ import UIKit
 /// so a tap opens the Shell Terminal in the detail column.
 struct TerminalListView: View {
     let hosts: [Host]
-    let console: ConsoleStore
-    let presentation: TerminalListPresentationStore
+    @ObservedObject var console: ConsoleStore
+    @ObservedObject var presentation: TerminalListPresentationStore
     let filteredHostIDs: Set<Host.ID>
     /// Keeps matching shells only, in either presentation.
     var searchQuery = ""
@@ -98,7 +98,7 @@ struct TerminalListView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .listSectionSpacing(.compact)
+            .listSectionSpacingCompactCompat()
             // The sidebar's own fill behind the cards, as By Host shows.
             .scrollContentBackground(.hidden)
             .background(isSidebarColumn ? .clear : Color(uiColor: .systemGroupedBackground))
@@ -165,7 +165,7 @@ struct TerminalListView: View {
                 trailing: TerminalCardRow.margin))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-        .selectionDisabled()
+        .selectionDisabledCompat()
         if !workspace.isCollapsed {
             let terminals = workspace.terminals
             ForEach(Array(terminals.enumerated()), id: \.element.id) { @Sendable index, terminal in
@@ -188,14 +188,14 @@ struct TerminalListView: View {
     private var emptyState: some View {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
-            ContentUnavailableView.search(text: query)
+            CompatUnavailableView("No Results", systemImage: "magnifyingglass", description: Text("No results for \"\(query)\"."))
         } else {
             noTerminals
         }
     }
 
     private var noTerminals: some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label("No Terminals", systemImage: "terminal")
         } description: {
             Text("Shell panes on your Hosts appear here, grouped by Workspace.")
@@ -240,7 +240,7 @@ struct TerminalListView: View {
                         top: Self.workspaceHeaderPadding, leading: 0,
                         bottom: Self.workspaceHeaderPadding, trailing: 0))
         }
-        .listSectionSpacing(.custom(Self.workspaceSpacing))
+        .listSectionSpacingCompat(Self.workspaceSpacing)
     }
 
     /// A By Workspace row's slice of its card. The list rounds the card's
@@ -493,7 +493,7 @@ struct TerminalTile: View {
             .foregroundStyle(tint)
             .frame(width: 30, height: 30)
             .background(
-                tint == .secondary ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(tint.opacity(0.16)),
+                tint == .secondary ? AnyShapeStyle(Color(uiColor: .tertiarySystemFill)) : AnyShapeStyle(tint.opacity(0.16)),
                 in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .accessibilityHidden(true)
     }
@@ -648,7 +648,7 @@ private struct TerminalHostHeader: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 2)
-                        .background(.fill.tertiary, in: Capsule())
+                        .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                 }
                 // The Workspace chevrons' weight and ink, as the Agents
                 // tab's Host header draws it.

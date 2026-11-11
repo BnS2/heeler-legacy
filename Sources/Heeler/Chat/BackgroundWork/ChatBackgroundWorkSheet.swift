@@ -5,7 +5,7 @@ import SwiftUI
 /// message. A Workflow opens to the agents its journal lists. Like the
 /// strip, it only shows; nothing here stops work.
 struct ChatBackgroundWorkSheet: View {
-    let chat: AgentChatStore
+    @ObservedObject var chat: AgentChatStore
     let isHostConnected: Bool
     /// The presenting surface's: inside the sheet, the size class
     /// describes the sheet, not the screen.
@@ -48,7 +48,7 @@ struct ChatBackgroundWorkSheet: View {
         .modifier(ConsoleStatusSheetPresentationModifier(presentation: sheetPresentation))
         .accessibilityIdentifier("chat.background-work.sheet")
         // A new message, or another conversation, leaves nothing to show.
-        .onChange(of: chat.backgroundWork.rows.isEmpty) { _, isEmpty in
+        .onChangeCompat(of: chat.backgroundWork.rows.isEmpty) { _, isEmpty in
             if isEmpty { dismiss() }
         }
     }
@@ -85,7 +85,7 @@ struct ChatBackgroundWorkSheet: View {
             }
         }
         // Rows start under the title, not a section header's gap below.
-        .contentMargins(.top, 4, for: .scrollContent)
+        .contentMarginsTopCompat(4)
         .consoleSheetPage()
     }
 
@@ -130,7 +130,7 @@ private struct ChatBackgroundWorkSheetRow: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(verbatim: row.title)
                         .font(.body)
-                        .fontDesign(row.kind == .workflow ? .monospaced : nil)
+                        .fontDesignCompat(row.kind == .workflow ? .monospaced : nil)
                         .lineLimit(2)
                     Spacer(minLength: 0)
                     if let time = row.time {
@@ -197,7 +197,7 @@ private struct ChatBackgroundWorkAgentRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: agent.label)
                     .font(.subheadline)
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .lineLimit(2)
                     .truncationMode(.middle)
                 if let phase = agent.phase {

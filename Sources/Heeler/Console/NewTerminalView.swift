@@ -119,7 +119,7 @@ struct NewTerminalView: View {
             }
             // The last footer ends clear of the sheet's rounded corners
             // when the form fits it.
-            .contentMargins(.bottom, 20, for: .scrollContent)
+            .contentMarginsCompat(.bottom, 20)
             // A handful of rows, which a full form would leave a third
             // empty. The directory browser is a sheet of its own, so a
             // fitted form costs it no room.
@@ -145,7 +145,7 @@ struct NewTerminalView: View {
                     }
                 }
             }
-            .onChange(of: store.state) {
+            .onChangeCompat(of: store.state) { _, _ in
                 guard case .created(let id) = store.state,
                     let terminal = console.terminals.first(where: { $0.id == id })
                 else { return }

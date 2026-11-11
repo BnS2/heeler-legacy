@@ -144,10 +144,14 @@ struct DiffCodeText: View {
             return upper > lower ? lower..<upper : nil
         }
         if let change = palette.change(line.kind), !changes.isEmpty {
-            Self.text(parts.code, changes: changes)
-                .textRenderer(DiffWordRenderer(
-                    fill: Color(uiColor: change.word),
-                    outline: Color(uiColor: change.ink).opacity(0.7)))
+            if #available(iOS 18, *) {
+                Self.text(parts.code, changes: changes)
+                    .textRenderer(DiffWordRenderer(
+                        fill: Color(uiColor: change.word),
+                        outline: Color(uiColor: change.ink).opacity(0.7)))
+            } else {
+                Text(verbatim: parts.code)
+            }
         } else {
             Text(verbatim: parts.code.isEmpty && parts.indent.isEmpty ? " " : parts.code)
         }
@@ -173,8 +177,8 @@ struct DiffCodeText: View {
                 let plain = Text(verbatim: String(characters[cursor..<range.lowerBound]))
                 result = Text("\(result)\(plain)")
             }
-            let word = Text(verbatim: String(characters[range.lowerBound..<upper]))
-                .customAttribute(DiffWordAttribute())
+            var word = Text(verbatim: String(characters[range.lowerBound..<upper]))
+            if #available(iOS 18, *) { word = word.customAttribute(DiffWordAttribute()) }
             result = Text("\(result)\(word)")
             cursor = upper
         }
@@ -187,10 +191,12 @@ struct DiffCodeText: View {
 }
 
 /// Marks a changed word for `DiffWordRenderer`.
+@available(iOS 18, *)
 struct DiffWordAttribute: TextAttribute {}
 
 /// Draws a rounded fill and outline behind each changed word, then the text.
 /// The outline is the second channel beside colour.
+@available(iOS 18, *)
 struct DiffWordRenderer: TextRenderer {
     let fill: Color
     let outline: Color

@@ -1,11 +1,9 @@
-import Observation
 import SwiftUI
 
 /// Created by each Console, never shared between windows. Tokens prevent outgoing
 /// views from removing the replacement view's registration during navigation.
 @MainActor
-@Observable
-final class ConsoleCommandRegistry {
+final class ConsoleCommandRegistry: ObservableObject {
     struct Terminal {
         let token: UUID
         let agentID: ConsoleAgent.ID
@@ -35,11 +33,11 @@ final class ConsoleCommandRegistry {
         let isPresenting: Bool
     }
 
-    private(set) var terminal: Terminal?
-    private(set) var composer: Composer?
+    @Published private(set) var terminal: Terminal?
+    @Published private(set) var composer: Composer?
     /// The wrapper and Shell Terminal can both present. Neither may overwrite
     /// or remove the other surface's coverage when its own presentation ends.
-    private(set) var detailPresentations: [UUID: DetailPresentation] = [:]
+    @Published private(set) var detailPresentations: [UUID: DetailPresentation] = [:]
 
     func register(_ terminal: Terminal) { self.terminal = terminal }
     func register(_ composer: Composer) { self.composer = composer }
@@ -108,7 +106,7 @@ struct ConsoleCommandTarget {
         var offersNewItem = true
     }
 
-    let registry: ConsoleCommandRegistry
+    @ObservedObject var registry: ConsoleCommandRegistry
     let context: @MainActor () -> Context
     /// Worded for the tab on screen; the menu reads them, key dispatch does not.
     var titles = ConsoleCommandTitles()
@@ -222,8 +220,8 @@ struct ConsoleDetailPresentationRegistration: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear { register() }
-            .onChange(of: agentID) { _, _ in update() }
-            .onChange(of: isPresenting) { _, _ in update() }
+            .onChangeCompat(of: agentID) { _, _ in update() }
+            .onChangeCompat(of: isPresenting) { _, _ in update() }
             .onDisappear { registry?.removeDetailPresentation(token) }
     }
 
@@ -254,8 +252,8 @@ struct ConsoleTerminalCommandRegistration: ViewModifier {
         content
             .environment(\.consoleCommandTerminalToken, token)
             .onAppear { register() }
-            .onChange(of: isFocused) { _, _ in update() }
-            .onChange(of: isPresenting) { _, _ in update() }
+            .onChangeCompat(of: isFocused) { _, _ in update() }
+            .onChangeCompat(of: isPresenting) { _, _ in update() }
             .onDisappear { registry?.removeTerminal(token) }
     }
 
@@ -289,7 +287,7 @@ struct ConsoleComposerCommandRegistration: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear { register() }
-            .onChange(of: isFocused) { _, _ in
+            .onChangeCompat(of: isFocused) { _, _ in
                 guard registry?.composer?.token == token else { return }
                 register()
             }

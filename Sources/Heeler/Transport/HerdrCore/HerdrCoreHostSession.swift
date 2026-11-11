@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// How long a refused channel is polled while a terminal holder restarts its
 /// core, about three seconds after the core dies (ADR 0031).

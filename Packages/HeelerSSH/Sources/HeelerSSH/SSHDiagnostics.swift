@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// Failure diagnostics for the reader of a CI log, not for the program.
 ///

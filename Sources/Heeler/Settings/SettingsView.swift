@@ -66,12 +66,12 @@ enum SettingsOverlayNetworksDestination: String, Sendable {
 /// pushing the appearance controls out of reach, and vice versa.
 struct SettingsView: View {
     let terminal: TerminalSettings
-    let appearance: AppAppearanceSettings
-    let pushRegistration: PushRegistrationStore
-    let notificationPreferences: NotificationPreferencesStore
-    let relaySettings: NotificationRelaySettings
-    let liveActivities: HostLiveActivityCoordinator
-    let console: ConsoleStore
+    @ObservedObject var appearance: AppAppearanceSettings
+    @ObservedObject var pushRegistration: PushRegistrationStore
+    @ObservedObject var notificationPreferences: NotificationPreferencesStore
+    @ObservedObject var relaySettings: NotificationRelaySettings
+    @ObservedObject var liveActivities: HostLiveActivityCoordinator
+    @ObservedObject var console: ConsoleStore
     let hosts: [Host]
     let onHostAdded: (Host.ID) -> Void
     /// Opens a core Host's page in Hosts with its Host Helper sheet up.
@@ -81,9 +81,9 @@ struct SettingsView: View {
     var onDone: (@MainActor () -> Void)? = nil
     /// Injected app-wide by `ContentView`; absent in previews, where the
     /// Overlay Networks row is left out.
-    @Environment(OverlayNetworkStore.self) private var overlayNetworks: OverlayNetworkStore?
+    @Environment(\.overlayNetworkStore) private var overlayNetworks
     /// Injected app-wide by `ContentView`; absent in previews.
-    @Environment(VoiceInputSession.self) private var voiceInput: VoiceInputSession?
+    @Environment(\.voiceInputSession) private var voiceInput
 
     static let agentListDestination = SettingsAgentListDestination.fields
     static let overlayNetworksDestination = SettingsOverlayNetworksDestination.networks

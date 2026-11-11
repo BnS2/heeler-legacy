@@ -227,34 +227,33 @@ struct AgentMessageJumpProfile: Equatable {
 /// a jump Task captures the live generation, and any follow-up such as
 /// ``returnToLive`` is abandoned once ``resetSession`` has advanced it.
 @MainActor
-@Observable
-final class AgentMessageJumpWiring {
+final class AgentMessageJumpWiring: ObservableObject {
     struct SessionGeneration: Sendable, Hashable {
         fileprivate let value: UInt64
     }
 
-    let scrollControl: TerminalScrollControl
+    @ObservedObject var scrollControl: TerminalScrollControl
     let messageIndex: AttachUserMessageIndex
     let controller: TerminalMessageJumpController
 
     /// Latest viewport frame delivered through Agent detail's production seam.
-    private(set) var lastViewportFrame: String?
-    private(set) var liveGeneration = SessionGeneration(value: 0)
+    @Published private(set) var lastViewportFrame: String?
+    @Published private(set) var liveGeneration = SessionGeneration(value: 0)
     /// True only after a jump Task has passed its entry generation check.
-    private(set) var isJumpRunning = false
+    @Published private(set) var isJumpRunning = false
     /// Direction of the jump in flight, for the chrome's progress indicator.
     /// Nil whenever ``isJumpRunning`` is false.
-    private(set) var runningDirection: TerminalMessageJumpController.Direction?
+    @Published private(set) var runningDirection: TerminalMessageJumpController.Direction?
     /// Which directions still have somewhere to go. Drives per-button
     /// visibility; reset with the session.
-    private(set) var reach = MessageJumpReach()
+    @Published private(set) var reach = MessageJumpReach()
     /// How many jump bodies passed the entry guard. Test seam for the
     /// reset-before-start race.
-    private(set) var jumpInvocationCount = 0
+    @Published private(set) var jumpInvocationCount = 0
 
-    private var nextGeneration: UInt64 = 0
-    private var jumpEpoch: UInt64 = 0
-    private var jumpTask: Task<Void, Never>?
+    @Published private var nextGeneration: UInt64 = 0
+    @Published private var jumpEpoch: UInt64 = 0
+    @Published private var jumpTask: Task<Void, Never>?
 
     init(
         policy: TerminalMessageJumpPolicy = .neighborAppearance,
@@ -605,7 +604,7 @@ struct TerminalEdgeTabBackground: View {
 
     var body: some View {
         Self.shape
-            .fill(palette.background.mix(with: palette.foreground, by: 0.16).opacity(fillOpacity))
+            .fill(palette.background.mixedCompat(with: palette.foreground, by: 0.16).opacity(fillOpacity))
             .overlay {
                 Self.shape.strokeBorder(palette.foreground.opacity(0.2), lineWidth: 1)
             }
@@ -647,7 +646,7 @@ struct TerminalFloatingControlBackground: View {
 
     var body: some View {
         Capsule()
-            .fill(palette.background.mix(with: palette.foreground, by: 0.16).opacity(0.82))
+            .fill(palette.background.mixedCompat(with: palette.foreground, by: 0.16).opacity(0.82))
             .overlay {
                 Capsule().strokeBorder(palette.foreground.opacity(0.2), lineWidth: 1)
             }
@@ -684,7 +683,7 @@ struct MessageJumpChromeOverlay: UIViewRepresentable {
         // The chrome can now rest against the terminal's top edge, right
         // under the status bar. Left to its defaults, the hosting controller
         // pads its content by that safe area and the buttons drift down.
-        host.safeAreaRegions = []
+        if #available(iOS 16.4, *) { host.safeAreaRegions = [] }
         context.coordinator.host = host
         context.coordinator.container = container
         context.coordinator.onDock = onDock

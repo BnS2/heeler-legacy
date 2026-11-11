@@ -9,7 +9,7 @@ struct ChangesFailureState<Actions: View>: View {
     @ViewBuilder let actions: () -> Actions
 
     var body: some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label(title, systemImage: symbol)
         } description: {
             Text(message)

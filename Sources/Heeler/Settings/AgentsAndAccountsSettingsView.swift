@@ -4,7 +4,7 @@ import SwiftUI
 /// Presets and each Host's Accounts for every harness. New Agent offers the
 /// presets; Usage and Chat read the Accounts.
 struct AgentsAndAccountsSettingsView: View {
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     let hosts: [Host]
     @State private var editing: Editing?
 
@@ -82,8 +82,7 @@ struct AgentsAndAccountsSettingsView: View {
 /// harness's Default.
 private struct HostAccountsRowLabel: View {
     let host: Host
-    let store: HostAccountsStore
-
+    @ObservedObject var store: HostAccountsStore
     var body: some View {
         let count = SupportedAgentKind.allCases.reduce(0) { $0 + store.file.accounts(for: $1).count }
         LabeledContent {

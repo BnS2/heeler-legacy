@@ -1,10 +1,9 @@
+import Combine
 import Foundation
-import Observation
 
 /// One open file's in-memory patch, independent of the Changes list's reads.
 @MainActor
-@Observable
-final class FileDiffStore {
+final class FileDiffStore: ObservableObject {
     enum Phase: Equatable {
         case loading
         case loaded(FilePatch)
@@ -22,20 +21,20 @@ final class FileDiffStore {
         case removed
     }
 
-    private(set) var file: ChangedFile
+    @Published private(set) var file: ChangedFile
     let checkout: CheckoutLocation
-    private(set) var phase: Phase = .loading
-    private(set) var isRefreshing = false
-    private(set) var readAt: Date?
+    @Published private(set) var phase: Phase = .loading
+    @Published private(set) var isRefreshing = false
+    @Published private(set) var readAt: Date?
     /// A refresh failure accompanies the earlier patch instead of replacing it.
-    private(set) var refreshError: String?
-    private(set) var listChange: ListChange?
+    @Published private(set) var refreshError: String?
+    @Published private(set) var listChange: ListChange?
     /// Nil means a complete list no longer contains this path. Keeping both
     /// observations prevents repeated notices after reloading a removed file.
-    @ObservationIgnored private var latestListFile: ChangedFile?
-    @ObservationIgnored private var loadedListFile: ChangedFile?
-    @ObservationIgnored private let now: @MainActor () -> Date
-    private var loadedLimit: FilePatchRequest.Limit = .initial
+    private var latestListFile: ChangedFile?
+    private var loadedListFile: ChangedFile?
+    private let now: @MainActor () -> Date
+    @Published private var loadedLimit: FilePatchRequest.Limit = .initial
 
     var truncation: Truncation {
         guard case .loaded(let patch) = phase, patch.isTruncated else { return .none }
@@ -48,11 +47,11 @@ final class FileDiffStore {
             + (file.lineCounts.map { " " + $0.summary } ?? "")
     }
 
-    @ObservationIgnored private let read:
+    private let read:
         @Sendable (FilePatchRequest) async throws -> FilePatch
-    @ObservationIgnored private var hasRead = false
-    @ObservationIgnored private var activeRead: Task<FilePatch, any Error>?
-    @ObservationIgnored private var readID = UUID()
+    private var hasRead = false
+    private var activeRead: Task<FilePatch, any Error>?
+    private var readID = UUID()
 
     init(
         file: ChangedFile, checkout: CheckoutLocation,

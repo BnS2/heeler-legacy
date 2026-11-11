@@ -243,7 +243,7 @@ private struct ChatFileChangeLabel: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("\(Text(verbatim: file.kind.localizedLabel).foregroundStyle(.secondary)) \(Text(verbatim: path).fontDesign(.monospaced))")
+            Text("\(Text(verbatim: file.kind.localizedLabel).foregroundStyle(.secondary)) \(Text(verbatim: path).fontDesignCompat(.monospaced))")
                 .font(.footnote)
                 .lineLimit(lineLimit)
                 .truncationMode(.middle)
@@ -439,7 +439,7 @@ struct ChatFileDiffSheet: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(Text(verbatim: file.kind.localizedLabel).foregroundStyle(.secondary)) \(Text(verbatim: path).fontDesign(.monospaced))")
+                    Text("\(Text(verbatim: file.kind.localizedLabel).foregroundStyle(.secondary)) \(Text(verbatim: path).fontDesignCompat(.monospaced))")
                         .font(.footnote)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     ChatDiffBadge(diff: ChatDiffStats(added: file.added, removed: file.removed))

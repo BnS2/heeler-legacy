@@ -5,7 +5,7 @@ import SwiftUI
 struct AgentUsageHostEntry: Identifiable {
     let id: Host.ID
     let name: String
-    let store: AgentUsageStore
+    @ObservedObject var store: AgentUsageStore
     let isConnected: Bool
     /// A herdr-core Host, whose Host Helper reads Usage in place of the plugin.
     var readsOverHostHelper = false
@@ -110,16 +110,16 @@ struct AgentUsageDashboard: View {
         .refreshable { await refresh() }
         .sheet(item: $daySheet) { selection in
             AgentUsageDaySheet(scope: scope, selection: selection, isFormSheet: sizeClass == .regular)
-                .presentationSizing(.form)
+                .presentationSizingFormCompat()
         }
         .sheet(isPresented: $isShowingLimits) {
             AgentUsageLimitsSheet(entries: scopedEntries)
         }
         .modifier(HostAccountsSheetPresenter(hostID: $accountsHostID, entries: entries))
-        .onChange(of: scopeHostID) { selectedDay = nil }
+        .onChangeCompat(of: scopeHostID) { _, _ in selectedDay = nil }
         // Waits for the first layout: until then the page cannot tell wide
         // from compact.
-        .onChange(of: limitsRequested && width > 0, initial: true) { _, ready in
+        .onChangeCompat(of: limitsRequested && width > 0, initial: true) { _, ready in
             guard ready else { return }
             limitsRequested = false
             if isWide { showsLimits = true } else { isShowingLimits = true }
@@ -130,7 +130,7 @@ struct AgentUsageDashboard: View {
 
     private func refresh() async {
         let stores = scopedEntries.map(\.store)
-        await withDiscardingTaskGroup { group in
+        await withTaskGroup(of: Void.self) { group in
             for store in stores {
                 group.addTask { await store.pullToRefresh() }
             }
@@ -222,7 +222,7 @@ struct AgentUsageDashboard: View {
         if let selectedDay {
             label = Text(AgentUsageCalendarDay.text(selectedDay, locale: locale, calendar: calendar,
                     includesYear: false, includesWeekday: true))
-                .fontWeight(.semibold).foregroundStyle(.primary)
+                .fontWeight(.semibold).foregroundColor(.primary)
                 + Text(" · \(metricName)")
         } else {
             label = Text("\(metricName) · \(rangeName)")
@@ -793,7 +793,7 @@ struct AgentUsageDashboard: View {
     ) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(title).fontWeight(.semibold)
-                + Text(detail.map { " · \($0)" } ?? "").foregroundStyle(.secondary)
+                + Text(detail.map { " · \($0)" } ?? "").foregroundColor(.secondary)
             Spacer(minLength: 8)
             trailing()
         }

@@ -1,11 +1,10 @@
+import Combine
 import Foundation
-import Observation
 
 /// Retains lazily opened shell PTYs across destination changes, sharing
 /// the Host-wide three-terminal budget with retained Agent Attach.
 @MainActor
-@Observable
-final class TerminalConnectionPool {
+final class TerminalConnectionPool: ObservableObject {
     enum Failure: Error, LocalizedError {
         case alreadyVisible
         case allConnectionsVisible
@@ -71,12 +70,12 @@ final class TerminalConnectionPool {
         var retained = true
     }
 
-    private(set) var entries: [Key: Entry] = [:]
+    @Published private(set) var entries: [Key: Entry] = [:]
     let idleTimeout: Duration
     let maximumShellsPerHost: Int
-    @ObservationIgnored private let budget: TerminalRetentionBudget
-    @ObservationIgnored private let now: @MainActor () -> Date
-    @ObservationIgnored private var mutationTail: Task<Void, Never>?
+    private let budget: TerminalRetentionBudget
+    private let now: @MainActor () -> Date
+    private var mutationTail: Task<Void, Never>?
 
     init(
         idleTimeout: Duration = .seconds(300),

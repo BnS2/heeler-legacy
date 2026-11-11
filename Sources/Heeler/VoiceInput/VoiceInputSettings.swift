@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Where Voice Input sends recordings: a built-in service or the user's own.
 enum VoiceInputService: Hashable, Sendable, Identifiable {
@@ -121,8 +121,7 @@ struct VoiceInputServiceDraft {
 /// rest is in user defaults. Voice Input stays off until a service is saved
 /// with a key and the user has agreed to send recordings to it.
 @MainActor
-@Observable
-final class VoiceInputSettings {
+final class VoiceInputSettings: ObservableObject {
     static let keychainService = "dev.bybee.heeler.voice"
 
     enum SaveError: Error, Equatable {
@@ -164,25 +163,25 @@ final class VoiceInputSettings {
     }
 
     /// Nil while Voice Input is off.
-    private(set) var service: VoiceInputService?
-    private(set) var custom: VoiceInputCustomService
-    private(set) var consents: Set<String>
-    private(set) var requestOptions: [String: VoiceInputRequestOptions]
+    @Published private(set) var service: VoiceInputService?
+    @Published private(set) var custom: VoiceInputCustomService
+    @Published private(set) var consents: Set<String>
+    @Published private(set) var requestOptions: [String: VoiceInputRequestOptions]
     /// Bumped by every key write, so views re-read `hasKey(for:)`.
-    private(set) var keyRevision = 0
+    @Published private(set) var keyRevision = 0
     /// Records from this device's own microphone even while AirPods that
     /// record in full bandwidth are connected. Off by default, and applied
     /// at once rather than on Save.
-    private(set) var alwaysUsesBuiltInMicrophone: Bool
+    @Published private(set) var alwaysUsesBuiltInMicrophone: Bool
     /// Names and terms the user says, sent with each recording so the
     /// service spells them. One list for every service.
-    private(set) var keywords: [String]
+    @Published private(set) var keywords: [String]
     /// What recordings are about, sent with each one. One for every
     /// service; empty when unset.
-    private(set) var prompt: String
+    @Published private(set) var prompt: String
 
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
-    @ObservationIgnored private let secrets: any SecretStore
+    private nonisolated(unsafe) let defaults: UserDefaults
+    private let secrets: any SecretStore
 
     init(
         defaults: UserDefaults = .standard,

@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Whether this device's registration lets a Host show a Live Activity. Herdr
 /// TUI's is always open: its activity needs the toggle, key and device token alone.
@@ -16,39 +16,38 @@ enum LiveActivityGate: Sendable, Equatable {
 /// tokens are written to the Host registration file so the plugin, or a core
 /// Host's Host Helper, can keep the activity alive after the app suspends.
 @MainActor
-@Observable
-final class HostLiveActivityCoordinator {
+final class HostLiveActivityCoordinator: ObservableObject {
     let preferences: LiveActivityPreferences
 
-    @ObservationIgnored private let controller: any LiveActivityControlling
-    @ObservationIgnored private let transports: any NotificationTransportProvider
-    @ObservationIgnored private let keys: NotificationKeyStore
-    @ObservationIgnored private let ceremony: NotificationRegistrationCeremony
-    @ObservationIgnored private let deviceToken: @MainActor () -> APNSDeviceToken?
-    @ObservationIgnored private let knownHostIDs: @MainActor () -> Set<Host.ID>
-    @ObservationIgnored private let supportsHost: @MainActor (Host.ID) -> Bool
-    @ObservationIgnored private let registrationGate: @MainActor (Host.ID) -> LiveActivityGate
-    @ObservationIgnored private let hostDisplayName: @MainActor (Host.ID) -> String
-    @ObservationIgnored private let isAwaitingSnapshot: @MainActor (Host.ID) -> Bool
-    @ObservationIgnored private let connectionStatus: @MainActor (Host.ID) -> EventsSessionStatus?
-    @ObservationIgnored private let pinnedPaneIDs: @MainActor (Host.ID) -> [String]
-    @ObservationIgnored private let rowLayout: @MainActor (Host.ID) -> AgentRowLayout?
-    @ObservationIgnored private let settleDuration: Duration
-    @ObservationIgnored private let now: @MainActor () -> Date
+    private let controller: any LiveActivityControlling
+    private let transports: any NotificationTransportProvider
+    private let keys: NotificationKeyStore
+    private let ceremony: NotificationRegistrationCeremony
+    private let deviceToken: @MainActor () -> APNSDeviceToken?
+    private let knownHostIDs: @MainActor () -> Set<Host.ID>
+    private let supportsHost: @MainActor (Host.ID) -> Bool
+    private let registrationGate: @MainActor (Host.ID) -> LiveActivityGate
+    private let hostDisplayName: @MainActor (Host.ID) -> String
+    private let isAwaitingSnapshot: @MainActor (Host.ID) -> Bool
+    private let connectionStatus: @MainActor (Host.ID) -> EventsSessionStatus?
+    private let pinnedPaneIDs: @MainActor (Host.ID) -> [String]
+    private let rowLayout: @MainActor (Host.ID) -> AgentRowLayout?
+    private let settleDuration: Duration
+    private let now: @MainActor () -> Date
 
-    @ObservationIgnored private var didStart = false
-    @ObservationIgnored private var latestAgents: [Host.ID: [ConsoleAgent]] = [:]
-    @ObservationIgnored private var applied: [Host.ID: AgentActivityDesire] = [:]
-    @ObservationIgnored private var settleTasks: [Host.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var sessions: [Host.ID: ActivitySession] = [:]
-    @ObservationIgnored private var pipes: [Host.ID: TokenPipe] = [:]
-    @ObservationIgnored private var writerTasks: [Host.ID: Task<Void, Never>] = [:]
+    private var didStart = false
+    private var latestAgents: [Host.ID: [ConsoleAgent]] = [:]
+    private var applied: [Host.ID: AgentActivityDesire] = [:]
+    private var settleTasks: [Host.ID: Task<Void, Never>] = [:]
+    private var sessions: [Host.ID: ActivitySession] = [:]
+    private var pipes: [Host.ID: TokenPipe] = [:]
+    private var writerTasks: [Host.ID: Task<Void, Never>] = [:]
     /// The Live Activity push token last written to each Host's entry, so a
     /// clear removes that token and nothing another Host wrote. Nil when no
     /// token is known, including after a failed token write that may still
     /// have landed; a clear then drops whatever token the own entry holds.
-    @ObservationIgnored private var writtenLiveActivityTokens: [Host.ID: String] = [:]
-    @ObservationIgnored var onDiagnostic: (@MainActor (Host.ID, String) -> Void)?
+    private var writtenLiveActivityTokens: [Host.ID: String] = [:]
+    var onDiagnostic: (@MainActor (Host.ID, String) -> Void)?
 
     var areActivitiesEnabled: Bool { controller.areEnabled }
 
@@ -78,7 +77,7 @@ final class HostLiveActivityCoordinator {
     /// Last reconcile verdict per Host, human-readable — the Settings
     /// diagnostic row that turns "no banner and no idea why" into a
     /// sentence (observable so the row updates live).
-    private(set) var reconcileNotes: [Host.ID: String] = [:]
+    @Published private(set) var reconcileNotes: [Host.ID: String] = [:]
 
     init(
         controller: any LiveActivityControlling,

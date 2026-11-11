@@ -1,13 +1,12 @@
+import Combine
 import Foundation
-import Observation
 
 /// Where each floating terminal control rests along the terminal's trailing
 /// edge, as a fraction of the room it has there (0 at the top, 1 at the
 /// bottom). A fraction rather than points, so one remembered position fits
 /// every terminal height, rotation, and keyboard state.
 @MainActor
-@Observable
-final class EdgeDockSettings {
+final class EdgeDockSettings: ObservableObject {
     enum Control: String, CaseIterable, Sendable {
         case workspaceDrawer = "workspace-drawer"
         case messageJump = "message-jump"
@@ -24,8 +23,8 @@ final class EdgeDockSettings {
         fileprivate var defaultsKey: String { "edge-dock-\(rawValue)" }
     }
 
-    private var fractions: [Control: CGFloat]
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private var fractions: [Control: CGFloat]
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

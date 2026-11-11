@@ -6,7 +6,7 @@ import UIKit
 /// and a second tap stops. While the microphone is being asked for or the
 /// text is on its way it waits; the recording bar's Cancel ends those.
 struct ComposerVoiceButton: View {
-    let voice: ComposerVoiceInput
+    @ObservedObject var voice: ComposerVoiceInput
     let tint: Color
     let action: () -> Void
 
@@ -28,7 +28,7 @@ struct ComposerVoiceButton: View {
             .frame(width: 18, height: 18)
         }
         .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
+        .buttonBorderShapeCircleCompat()
         .tint(voice.isRecording ? Color(uiColor: .systemRed) : tint)
         // Not `disabled`: that repaints the circle, near black in Dark Mode,
         // and the mic should only gain its spinner.
@@ -72,7 +72,7 @@ struct ComposerVoiceButton: View {
 /// first tap until the text lands. The mic's value says the phase to
 /// VoiceOver.
 struct ComposerVoiceBar: View {
-    let voice: ComposerVoiceInput
+    @ObservedObject var voice: ComposerVoiceInput
     let cancel: () -> Void
 
     var body: some View {

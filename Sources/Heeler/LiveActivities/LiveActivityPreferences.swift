@@ -1,15 +1,14 @@
+import Combine
 import Foundation
-import Observation
 
 /// Per-Host Live Activity opt-in, persisted in UserDefaults. Missing Hosts
 /// read as off — fail closed, same as a missing notify flag.
 @MainActor
-@Observable
-final class LiveActivityPreferences {
+final class LiveActivityPreferences: ObservableObject {
     private static let defaultsKey = "live-activity.enabled-hosts"
 
-    private var enabledIDs: Set<UUID>
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private var enabledIDs: Set<UUID>
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

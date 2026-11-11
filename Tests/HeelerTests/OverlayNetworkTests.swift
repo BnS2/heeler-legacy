@@ -1,6 +1,5 @@
 import Foundation
 import HeelerOverlay
-import Synchronization
 import Testing
 
 @testable import Heeler

@@ -7,9 +7,9 @@ struct AgentChatToolsKeyboard: View {
     let insertText: (String) -> Void
     /// Nil hides the Skills tab, as on the terminal.
     let skills: TerminalSkillsContext?
-    let snippets: SnippetStore
+    @ObservedObject var snippets: SnippetStore
     let manageSnippets: () -> Void
-    let agentKeys: ChatAgentKeysStore
+    @ObservedObject var agentKeys: ChatAgentKeysStore
     let height: CGFloat
     @State private var selectedTab: TerminalKeysTab = .controls
 
@@ -59,7 +59,7 @@ struct AgentChatToolsKeyboard: View {
         .frame(height: height)
         .clipped()
         .background(Color(uiColor: .systemBackground).ignoresSafeArea(edges: .bottom))
-        .onChange(of: selectedTab) { _, tab in
+        .onChangeCompat(of: selectedTab) { _, tab in
             guard tab == .skills, let skills else { return }
             Task { await skills.store.loadIfNeeded() }
         }
@@ -69,8 +69,7 @@ struct AgentChatToolsKeyboard: View {
 /// The Blocked card's keys, for any time: they go to the Agent's program,
 /// not into the Composer.
 private struct ChatAgentKeysPage: View {
-    let store: ChatAgentKeysStore
-
+    @ObservedObject var store: ChatAgentKeysStore
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {

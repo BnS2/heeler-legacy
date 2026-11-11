@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Console rename actions' form logic (#98): one store per presented
 /// rename sheet, covering both `agent.rename` and `workspace.rename`. The
@@ -11,8 +11,7 @@ import Observation
 /// closure over the `ConsoleStore`, so it is testable against a scripted
 /// transport.
 @MainActor
-@Observable
-final class RenameStore {
+final class RenameStore: ObservableObject {
     enum State: Equatable {
         /// Editing the form; no rename in flight.
         case editing
@@ -41,15 +40,15 @@ final class RenameStore {
 
     let subject: Subject
     /// The user's input, prefilled with the current name/label.
-    var input: String
+    @Published var input: String
 
-    private(set) var state: State = .editing
+    @Published private(set) var state: State = .editing
 
     private let rename: (String?) async throws -> Void
     /// In-flight guard flipped synchronously before the first await, so a
     /// double-tap cannot fire the rename twice through the window before
     /// `state == .renaming` disables the button (mirrors #12/#13).
-    private var isRenaming = false
+    @Published private var isRenaming = false
 
     init(
         subject: Subject,

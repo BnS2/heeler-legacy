@@ -71,7 +71,7 @@ final class ChatTimelineLayout: UICollectionViewLayout {
         let width = collectionView.bounds.width
         // A row measured in another font is as stale as one in another size.
         let traits = collectionView.traitCollection
-        let category = "\(traits.preferredContentSizeCategory.rawValue)|\(traits.chatFont.rawValue)"
+        let category = "\(traits.preferredContentSizeCategory.rawValue)|\(chatFontRaw(traits))"
         if ids != self.ids || width != self.width || category != contentSizeCategory {
             self.ids = ids
             self.width = width
@@ -204,4 +204,9 @@ final class ChatTimelineLayout: UICollectionViewLayout {
         let insets = collectionView.adjustedContentInset
         return max(0, collectionView.bounds.height - insets.top - insets.bottom)
     }
+}
+
+private func chatFontRaw(_ traits: UITraitCollection) -> String {
+    if #available(iOS 17, *) { return "\(traits.chatFont.rawValue)" }
+    return "system"
 }

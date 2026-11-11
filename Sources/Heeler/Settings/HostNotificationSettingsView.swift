@@ -4,9 +4,9 @@ import SwiftUI
 @MainActor
 struct HostNotificationSettings {
     let host: Host
-    let preferences: NotificationPreferencesStore
-    let liveActivities: HostLiveActivityCoordinator
-    let pluginStatuses: HeelerPluginStatusStore
+    @ObservedObject var preferences: NotificationPreferencesStore
+    @ObservedObject var liveActivities: HostLiveActivityCoordinator
+    @ObservedObject var pluginStatuses: HeelerPluginStatusStore
     /// Opens the Host's page in Hosts with its Host Helper sheet up.
     let openHostHelper: (@MainActor (Host.ID) -> Void)?
 

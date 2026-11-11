@@ -16,7 +16,7 @@ struct HostRouteFields: View {
 
     /// Absent in previews and hosting tests; the Network picker then offers
     /// only Direct (plus the route's current choice).
-    @Environment(OverlayNetworkStore.self) private var overlayNetworks: OverlayNetworkStore?
+    @Environment(\.overlayNetworkStore) private var overlayNetworks
 
     var body: some View {
         // The network decides which address to enter (and offers its peers
@@ -192,7 +192,7 @@ private struct OverlayPeerPickerSheet: ViewModifier {
     let otherHosts: [Host]
     let onPeerChosen: (OverlayPeerCandidate, OverlayPeerCandidate.AddressStyle) -> Void
 
-    @Environment(OverlayNetworkStore.self) private var overlayNetworks: OverlayNetworkStore?
+    @Environment(\.overlayNetworkStore) private var overlayNetworks
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: $isPresented) {
@@ -366,7 +366,7 @@ struct HostRouteFormView: View {
 struct HostRouteRow: View {
     let route: HostRouteDraft
 
-    @Environment(OverlayNetworkStore.self) private var overlayNetworks: OverlayNetworkStore?
+    @Environment(\.overlayNetworkStore) private var overlayNetworks
 
     var body: some View {
         HostRouteLabel(

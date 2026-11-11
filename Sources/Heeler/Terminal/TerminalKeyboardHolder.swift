@@ -48,7 +48,7 @@ final class TerminalKeyboardHolder: UITextView {
         smartQuotesType = .no
         smartDashesType = .no
         smartInsertDeleteType = .no
-        inlinePredictionType = .no
+        if #available(iOS 17, *) { inlinePredictionType = .no }
     }
 
     @available(*, unavailable)

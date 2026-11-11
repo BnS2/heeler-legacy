@@ -33,7 +33,10 @@ final class AgentUsageWidgetPublisher {
             WidgetCenter.shared.reloadTimelines(ofKind: UsageWidgetSnapshotStore.limitsKind)
         },
         installedKinds: @escaping @MainActor () async -> Set<String> = {
-            Set((try? await WidgetCenter.shared.currentConfigurations())?.map(\.kind) ?? [])
+            if #available(iOS 18, *) {
+                return Set((try? await WidgetCenter.shared.currentConfigurations())?.map(\.kind) ?? [])
+            }
+            return []
         }
     ) {
         self.store = store

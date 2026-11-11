@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import os
 
 /// One Host's Accounts for every harness (#621): the one place they are
@@ -9,8 +9,7 @@ import os
 /// suggested directories, and a change keeps its row busy until Usage has
 /// read the Host again.
 @MainActor
-@Observable
-final class HostAccountsStore {
+final class HostAccountsStore: ObservableObject {
     /// Runs one operation over the Host's connection: on a herdr-core Host, the
     /// Host Helper's Account file beside the Host's own file services (ADR 0033).
     typealias HostOperation = @MainActor (
@@ -70,27 +69,27 @@ final class HostAccountsStore {
     nonisolated static let usageKinds: [SupportedAgentKind] = [.claude, .codex]
 
     let hostID: Host.ID
-    private(set) var loadState: LoadState = .idle
+    @Published private(set) var loadState: LoadState = .idle
     /// The Account file as last read or written.
-    private(set) var file = UsageAccountFile()
+    @Published private(set) var file = UsageAccountFile()
     /// A failed refresh keeps this file authoritative over Usage's older list.
-    private var hasLoadedFile = false
+    @Published private var hasLoadedFile = false
     /// Changes being saved, or read back by Usage.
-    private(set) var pendingChanges: Set<Change> = []
+    @Published private(set) var pendingChanges: Set<Change> = []
     /// The last change that could not be saved; its alert, or the screen
     /// closing, clears it.
-    var changeFailure: ChangeFailure?
+    @Published var changeFailure: ChangeFailure?
     /// The Host's home folder, once asked for: directories show it as `~`.
-    private(set) var hostHome: String?
+    @Published private(set) var hostHome: String?
 
-    @ObservationIgnored private let onHost: HostOperation?
+    private let onHost: HostOperation?
     /// Serializes the Account file's read, edit and replace. Hosts that
     /// share a plugin config directory share the file, so the Console
     /// passes one gate for every Host, as for the registration file.
-    @ObservationIgnored private let fileGate: GitExecGate
-    @ObservationIgnored private let usage: @MainActor () -> AgentUsageStore?
+    private let fileGate: GitExecGate
+    private let usage: @MainActor () -> AgentUsageStore?
     /// Called after a change lands, so Chat and Launch Presets can follow.
-    @ObservationIgnored var didChange: (@MainActor () -> Void)?
+    var didChange: (@MainActor () -> Void)?
 
     init(
         hostID: Host.ID, onHost: HostOperation?, fileGate: GitExecGate = GitExecGate(),

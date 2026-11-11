@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Local draft operations shared by the plain-text Composer now and future
 /// Snippet, Skill, and Staged Image path insertion surfaces.
@@ -19,8 +19,7 @@ protocol ComposerDraftOperations: AnyObject {
 /// Both surfaces share the one draft; each message remembers which surface
 /// sent it.
 @MainActor
-@Observable
-final class AgentComposerStore: ComposerDraftOperations {
+final class AgentComposerStore: ObservableObject, ComposerDraftOperations {
     struct Message: Identifiable, Equatable {
         let id: UUID
         let text: String
@@ -70,20 +69,20 @@ final class AgentComposerStore: ComposerDraftOperations {
         case outcomeUnknown
     }
 
-    private(set) var messages: [Message] = []
-    private(set) var draft = "" {
+    @Published private(set) var messages: [Message] = []
+    @Published private(set) var draft = "" {
         didSet {
             if draft != oldValue { notice = nil }
         }
     }
     /// Recovery keeps the draft editable, but never queues it for delivery.
-    var isConnectionAvailable = true
+    @Published var isConnectionAvailable = true
     /// Why the last Send or Retry was refused. Changing the draft ends it,
     /// as does the next Send that goes; a transient refusal also ends when
     /// Agent Status changes, since the Agent it described has moved on.
-    private(set) var notice: ComposerNotice?
+    @Published private(set) var notice: ComposerNotice?
     /// UTF-16 caret/selection, matching the Composer text view.
-    private(set) var draftSelection = NSRange(location: 0, length: 0)
+    @Published private(set) var draftSelection = NSRange(location: 0, length: 0)
     /// Stop's wait, per Agent like the draft: the other surface, a rebuilt
     /// one or a reconnect finds an Esc still waiting on the Agent.
     let stop: AgentComposerStopStore
@@ -92,8 +91,8 @@ final class AgentComposerStore: ComposerDraftOperations {
     let voice: ComposerVoiceInput
 
     private let target: String
-    private var agentStatus: AgentStatus
-    private var statusRevision: UInt64 = 0
+    @Published private var agentStatus: AgentStatus
+    @Published private var statusRevision: UInt64 = 0
     private let statusUpdates: AsyncStream<ConsoleStore.AgentStatusUpdate>?
     /// Pace and budget for waiting out a fresh Agent's launch on
     /// `agent_not_ready`; the defaults mirror the transport's
@@ -103,25 +102,25 @@ final class AgentComposerStore: ComposerDraftOperations {
     private let agentNotReadyRetryBudget: Duration
     private let prompt: @Sendable (AgentPromptParams) async throws -> Agent
     /// How a herdr-core Host delivers instead of `prompt` (ADR 0035).
-    @ObservationIgnored private let coreSend: HerdrCoreComposerSend?
-    @ObservationIgnored private var hasOpened = false
-    @ObservationIgnored private var statusTask: Task<Void, Never>?
+    private let coreSend: HerdrCoreComposerSend?
+    private var hasOpened = false
+    private var statusTask: Task<Void, Never>?
     /// The detail screen's live Attach writer. Weak: Composer outlives any
     /// one Attach pipeline (reconnect replacement), and a dead writer must
     /// fail the Blocked path rather than retain a stale session.
-    @ObservationIgnored private weak var attachInput: TerminalInputController?
+    private weak var attachInput: TerminalInputController?
     /// ADR 0006 picker path. Weak through the bind so staging can keep the
     /// Composer as its draft owner without a retain cycle.
-    @ObservationIgnored private weak var staging: ComposerStagingStore?
+    private weak var staging: ComposerStagingStore?
     /// Dropped images waiting for `ComposerStagingStore.begin(_:)`. Each item
     /// owns a unique placeholder already inserted in `draft`.
-    @ObservationIgnored private var pendingDroppedImages: [PendingDroppedImage] = []
+    private var pendingDroppedImages: [PendingDroppedImage] = []
     /// Set by ``abandonDroppedImagesForTeardown()`` so leave/cancel events
     /// cannot start the next queued upload.
-    @ObservationIgnored private var isTearingDownDroppedImages = false
+    private var isTearingDownDroppedImages = false
     /// The editor holds marked text. Writing the draft then would destroy
     /// it, so Voice Input's text waits until the composition ends.
-    @ObservationIgnored private var isEditorComposing = false
+    private var isEditorComposing = false
 
     private struct PendingDroppedImage {
         enum Status: Equatable {

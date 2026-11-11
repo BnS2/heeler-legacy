@@ -50,7 +50,7 @@ struct PairingScanView: View {
                 }
             }
             .task { await resolveCameraAccess() }
-            .onChange(of: store.pairedHost) { _, paired in
+            .onChangeCompat(of: store.pairedHost) { _, paired in
                 guard let paired else { return }
                 dismiss()
                 onPaired(paired)
@@ -65,7 +65,7 @@ struct PairingScanView: View {
             // The system permission prompt is up (or about to be).
             ProgressView()
         case .denied:
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("Camera Access Needed", systemImage: "camera")
             } description: {
                 Text(store.scanFailureMessage ?? deniedCameraCopy)
@@ -78,7 +78,7 @@ struct PairingScanView: View {
             if DataScannerViewController.isSupported {
                 scannerViewport
             } else {
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("Scanning Unavailable", systemImage: "camera")
                 } description: {
                     Text(
@@ -161,7 +161,7 @@ struct PairingScanView: View {
 /// rescan.
 private struct PairingCeremonyView: View {
     let code: PairingCode
-    let store: PairingScanStore
+    @ObservedObject var store: PairingScanStore
     @State private var attempt = 0
     @State private var confirmed: Bool
 

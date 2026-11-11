@@ -8,7 +8,7 @@ import UIKit
 /// network's machines. Edit, Copy Node ID, Sign Out, and Delete are in the
 /// … menu.
 struct OverlayNetworkDetailView: View {
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     let networkID: OverlayNetwork.ID
     let onHostAdded: (Host.ID) -> Void
     /// Set for a network just added or signed in from the list: a Tailscale
@@ -34,7 +34,7 @@ struct OverlayNetworkDetailView: View {
     @Environment(\.openURL) private var openURL
     /// Injected app-wide by `ContentView`; absent in previews, where
     /// machines offer no Add Host….
-    @Environment(HostStore.self) private var hostStore: HostStore?
+    @Environment(\.hostStoreOptional) private var hostStore
 
     private static let adminConsoleURL = URL(string: "https://login.tailscale.com/admin/machines")
 
@@ -43,7 +43,7 @@ struct OverlayNetworkDetailView: View {
             if let network = store.network(id: networkID) {
                 content(network)
             } else {
-                ContentUnavailableView("Network Removed", systemImage: "network.slash")
+                CompatUnavailableView("Network Removed", systemImage: "network.slash")
             }
         }
         .task {
@@ -141,12 +141,12 @@ struct OverlayNetworkDetailView: View {
         }
         // The status card sits right under the bar, not a header's height
         // below it.
-        .contentMargins(.top, 8, for: .scrollContent)
+        .contentMarginsCompat(.top, 8)
         .modifier(
             MachineSearch(
                 isEnabled: searchesMachines, query: $query,
                 prompt: network.kind == .tailscale ? String(localized: "Machines") : String(localized: "Peers")))
-        .onChange(of: searchesMachines) { _, searches in
+        .onChangeCompat(of: searchesMachines) { _, searches in
             if !searches { query = "" }
         }
         .navigationTitle(network.displayName)
@@ -456,14 +456,14 @@ struct OverlayNetworkDetailView: View {
     private func emptyMachines(_ network: OverlayNetwork) -> some View {
         switch network.settings {
         case .tailscale:
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("Only This Device So Far", systemImage: OverlayKind.glyphSymbol)
             } description: {
                 Text(
                     String(localized: "Install Tailscale on your Mac and sign in with the same account. It appears here, ready to add as a Host."))
             }
         case .easytier(let networkName, _, _, _):
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Peers Yet", systemImage: OverlayKind.glyphSymbol)
             } description: {
                 Text(
@@ -555,7 +555,7 @@ struct OverlayNetworkDetailView: View {
             peers.filter { !OverlayStatusCopy.isZeroTierRoot($0) }.map(OverlayPeerCandidate.init))
         return Section {
             if members.isEmpty {
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("No Members Yet", systemImage: OverlayKind.glyphSymbol)
                 } description: {
                     Text(
@@ -597,7 +597,7 @@ struct OverlayNetworkDetailView: View {
             if let nodeID {
                 Button {
                     UIPasteboard.general.string = nodeID
-                    AccessibilityNotification.Announcement(String(localized: "Copied")).post()
+                    UIAccessibility.post(notification: .announcement, argument: String(localized: "Copied"))
                 } label: {
                     Label("Copy Node ID", systemImage: "doc.on.doc")
                 }
@@ -726,7 +726,7 @@ private struct OverlayStatusHeader<Trailing: View>: View {
                 Image(systemName: headline.symbol)
                     .font(.system(size: badgeSize * 0.42, weight: .semibold))
                     .foregroundStyle(headline.tone.color)
-                    .contentTransition(.symbolEffect(.replace))
+                    .contentTransitionSymbolReplaceCompat()
                     .frame(width: badgeSize, height: badgeSize)
                     .background(headline.tone.color.opacity(0.15), in: .circle)
                     .accessibilityHidden(true)
@@ -904,7 +904,7 @@ private struct OverlayCardCopyButton: View {
         } label: {
             Image(systemName: copied ? "checkmark" : "doc.on.doc")
                 .font((size < 36 ? Font.footnote : .body).weight(.semibold))
-                .contentTransition(.symbolEffect(.replace))
+                .contentTransitionSymbolReplaceCompat()
                 .frame(width: size, height: size)
                 .background(Color.accentColor.opacity(0.12), in: .circle)
         }
@@ -919,7 +919,7 @@ private struct OverlayCardCopyButton: View {
 
     static func copy(_ value: String) {
         UIPasteboard.general.string = value
-        AccessibilityNotification.Announcement(String(localized: "Copied")).post()
+        UIAccessibility.post(notification: .announcement, argument: String(localized: "Copied"))
     }
 }
 
@@ -969,7 +969,7 @@ private struct OverlayMachineRow: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(.fill.tertiary, in: .capsule)
+                    .background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                     .accessibilityHidden(true)
             } else if let onAdd {
                 Button("Add", action: onAdd)
@@ -1177,7 +1177,7 @@ private struct TailscaleAuthKeySheet: View {
 /// Settings › Overlay Networks › a network › Diagnostics: the node's raw
 /// state, read-only, with Copy All for a bug report. Never starts the node.
 struct OverlayDiagnosticsView: View {
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     let networkID: OverlayNetwork.ID
     @State private var diagnostics = OverlayDiagnostics()
     @State private var copied = false
@@ -1186,7 +1186,7 @@ struct OverlayDiagnosticsView: View {
         let roots = (store.details[networkID]?.peers ?? []).filter(OverlayStatusCopy.isZeroTierRoot)
         List {
             if diagnostics.isEmpty {
-                ContentUnavailableView(
+                CompatUnavailableView(
                     "No Diagnostics", systemImage: "stethoscope",
                     description: Text("Connect the network to see its state."))
             } else {
@@ -1247,7 +1247,7 @@ struct OverlayDiagnosticsView: View {
                 Button {
                     UIPasteboard.general.string = diagnostics.text
                     copied = true
-                    AccessibilityNotification.Announcement(String(localized: "Copied")).post()
+                    UIAccessibility.post(notification: .announcement, argument: String(localized: "Copied"))
                 } label: {
                     Label(copied ? "Copied" : "Copy All", systemImage: copied ? "checkmark" : "doc.on.doc")
                 }

@@ -61,16 +61,19 @@ enum ChatTextSettings {
 /// Chat's font as a UIKit trait, so the timeline's hosted cells read it
 /// from their trait collection, like the text size, and a change reaches
 /// every cell and re-measures it on the same path.
+@available(iOS 17, *)
 struct ChatFontTrait: UITraitDefinition {
     static let defaultValue = ChatFontOption.system
     static let identifier = "dev.bybee.heeler.chat-font"
     static let name = "ChatFont"
 }
 
+@available(iOS 17, *)
 extension UITraitCollection {
     var chatFont: ChatFontOption { self[ChatFontTrait.self] }
 }
 
+@available(iOS 17, *)
 extension UIMutableTraits {
     var chatFont: ChatFontOption {
         get { self[ChatFontTrait.self] }
@@ -78,8 +81,12 @@ extension UIMutableTraits {
     }
 }
 
-private struct ChatFontEnvironmentKey: EnvironmentKey, UITraitBridgedEnvironmentKey {
+private struct ChatFontEnvironmentKey: EnvironmentKey {
     static let defaultValue = ChatFontOption.system
+}
+
+@available(iOS 17, *)
+extension ChatFontEnvironmentKey: UITraitBridgedEnvironmentKey {
 
     static func read(from traitCollection: UITraitCollection) -> ChatFontOption {
         traitCollection.chatFont
@@ -104,6 +111,6 @@ struct ChatFontDesign: ViewModifier {
     @Environment(\.chatFont) private var font
 
     func body(content: Content) -> some View {
-        content.fontDesign(isCode ? .monospaced : font.design)
+        content.fontDesignCompat(isCode ? .monospaced : font.design)
     }
 }

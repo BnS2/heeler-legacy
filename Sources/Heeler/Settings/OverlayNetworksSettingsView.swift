@@ -7,7 +7,7 @@ import UIKit
 /// network's status and a switch that keeps it connected; signing in,
 /// editing, and the network's machines are on its own screen.
 struct OverlayNetworksSettingsView: View {
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     let onHostAdded: (Host.ID) -> Void
     @State private var isAdding = false
     @State private var deleteError: String?
@@ -106,7 +106,7 @@ struct OverlayNetworksSettingsView: View {
         }) {
             OverlayNetworkFormView(store: store) { addedNetworkID = $0 }
         }
-        .navigationDestination(item: $opened) { opened in
+        .navigationDestinationCompat(item: $opened) { opened in
             // A Tailscale network started here goes straight to sign-in
             // instead of waiting for another tap on its screen.
             OverlayNetworkDetailView(
@@ -125,7 +125,7 @@ struct OverlayNetworksSettingsView: View {
 
     private var emptyState: some View {
         Section {
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Networks", systemImage: OverlayKind.glyphSymbol)
             } description: {
                 Text(
@@ -153,7 +153,7 @@ struct OverlayNetworksSettingsView: View {
 /// the step in progress) at the trailing edge. The row opens the network.
 private struct OverlayNetworkRow: View {
     let network: OverlayNetwork
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     let onOpen: () -> Void
     let onSignIn: () -> Void
 
@@ -189,7 +189,7 @@ private struct OverlayNetworkRow: View {
 /// it connected, or the native loading button of the step in progress.
 struct OverlayNetworkControlView: View {
     let network: OverlayNetwork
-    let store: OverlayNetworkStore
+    @ObservedObject var store: OverlayNetworkStore
     /// Where Sign In goes; nil shows nothing for a network without a login
     /// (its screen has its own Sign In).
     var onSignIn: (() -> Void)?
@@ -751,7 +751,7 @@ struct OverlayCopyableRow: View {
         Button {
             UIPasteboard.general.string = value
             copied = true
-            AccessibilityNotification.Announcement(String(localized: "Copied")).post()
+            UIAccessibility.post(notification: .announcement, argument: String(localized: "Copied"))
         } label: {
             LabeledContent {
                 HStack(spacing: 6) {
@@ -763,7 +763,7 @@ struct OverlayCopyableRow: View {
                         .truncationMode(.middle)
                     Image(systemName: copied ? "checkmark" : "doc.on.doc")
                         .font(.footnote)
-                        .contentTransition(.symbolEffect(.replace))
+                        .contentTransitionSymbolReplaceCompat()
                         .foregroundStyle(copied ? Color.green : Color.accentColor)
                 }
             } label: {

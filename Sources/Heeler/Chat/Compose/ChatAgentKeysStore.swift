@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// What became of keys queued with `deliver`.
 enum ChatKeyDelivery: Equatable, Sendable {
@@ -15,12 +15,11 @@ enum ChatKeyDelivery: Equatable, Sendable {
 /// through an attach of Chat's own (ADR 0035). One request at a time, in the
 /// order pressed, as typed keys would arrive.
 @MainActor
-@Observable
-final class ChatAgentKeysStore {
+final class ChatAgentKeysStore: ObservableObject {
     /// Why the last key may not have arrived; cleared once one does.
-    private(set) var failure: String?
-    @ObservationIgnored private let send: @MainActor ([String]) async throws -> Void
-    @ObservationIgnored private var tail: Task<ChatKeyDelivery, Never>?
+    @Published private(set) var failure: String?
+    private let send: @MainActor ([String]) async throws -> Void
+    private var tail: Task<ChatKeyDelivery, Never>?
 
     init(send: @escaping @MainActor ([String]) async throws -> Void) {
         self.send = send

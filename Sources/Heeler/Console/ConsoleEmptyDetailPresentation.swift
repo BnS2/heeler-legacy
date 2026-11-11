@@ -91,7 +91,7 @@ struct ConsoleEmptyDetailView: View {
     @ScaledMetric(relativeTo: .body) private var minimumActionWidth: CGFloat = 200
 
     var body: some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label(presentation.title, systemImage: presentation.systemImage)
         } description: {
             Text(presentation.message)

@@ -34,7 +34,7 @@ struct AcknowledgementsView: View {
             if let notices {
                 noticeList(notices)
             } else {
-                ContentUnavailableView(
+                CompatUnavailableView(
                     "Notices Unavailable",
                     systemImage: "exclamationmark.triangle",
                     description: Text(
@@ -73,7 +73,7 @@ struct AcknowledgementsView: View {
         .readableColumnPage()
         .overlay {
             if notices.isEmpty {
-                ContentUnavailableView(
+                CompatUnavailableView(
                     "No Notices Bundled",
                     systemImage: "exclamationmark.triangle",
                     description: Text(

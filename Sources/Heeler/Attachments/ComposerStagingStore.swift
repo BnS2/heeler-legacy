@@ -1,11 +1,10 @@
+import Combine
 import Foundation
-import Observation
 
 /// Owns one cross-media Composer staging workflow. Prepared local files belong
 /// to this store; completed Host files intentionally outlive it (ADR 0005).
 @MainActor
-@Observable
-final class ComposerStagingStore {
+final class ComposerStagingStore: ObservableObject {
     enum Source: Sendable {
         case photo(any ImageSelection)
         case file(URL)
@@ -245,7 +244,7 @@ final class ComposerStagingStore {
         }
     }
 
-    private(set) var state: State = .idle
+    @Published private(set) var state: State = .idle
 
     var canBegin: Bool { !state.isBusy }
 
@@ -253,21 +252,21 @@ final class ComposerStagingStore {
         Self.presentation(for: state)
     }
 
-    private var imageAdapter: ImageAdapter
+    @Published private var imageAdapter: ImageAdapter
     private let fileAdapter: FileAdapter
     private let clipboard: any AttachmentClipboard
     private let composer: any ComposerDraftOperations
 
-    private var preparedSource: PreparedSource?
-    private var operationTask: Task<Void, Never>?
-    private var operationID: UInt64 = 0
-    private var cancellationDisposition: CancellationDisposition?
-    private var insertsPathIntoComposer = true
+    @Published private var preparedSource: PreparedSource?
+    @Published private var operationTask: Task<Void, Never>?
+    @Published private var operationID: UInt64 = 0
+    @Published private var cancellationDisposition: CancellationDisposition?
+    @Published private var insertsPathIntoComposer = true
     /// A core Host's upload says a transport failure in the transport's words.
     private let saysTransportFailures: Bool
     /// Optional per-operation terminal events. The picker path does not set this.
-    @ObservationIgnored
-    var onOperationEvent: (@MainActor (OperationEvent) -> Void)?
+
+    @Published var onOperationEvent: (@MainActor (OperationEvent) -> Void)?
 
     init(
         imagePreparer: any ImagePreparing = ImagePreparer(),

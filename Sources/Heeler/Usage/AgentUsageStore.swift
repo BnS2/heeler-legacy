@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import os
 
 /// What a herdr-core Host's Usage is waiting for (ADR 0033). Thrown by a read,
@@ -42,8 +42,7 @@ enum AgentUsageHostHelperNeed: Error, Equatable, Sendable {
 /// from Console, so opening Usage starts no independent SSH connection there. A
 /// core Host's read dials one when Console has none (ADR 0033).
 @MainActor
-@Observable
-final class AgentUsageStore {
+final class AgentUsageStore: ObservableObject {
     enum State: Equatable, Sendable {
         case idle
         case loading
@@ -81,9 +80,9 @@ final class AgentUsageStore {
     /// doubles from `pollInterval` up to this interval.
     nonisolated static let maximumRetryInterval: Duration = .seconds(30)
 
-    private var snapshotState: State = .idle
+    @Published private var snapshotState: State = .idle
     /// Whether the shown report's query asked for Claude Code limits.
-    private var snapshotIncludesClaudeLimits = false
+    @Published private var snapshotIncludesClaudeLimits = false
     var state: State {
         guard case .available(let report) = snapshotState else { return snapshotState }
         if !claudeLimitsEnabled { return .available(report.hidingClaudeLimits()) }
@@ -96,19 +95,19 @@ final class AgentUsageStore {
         return snapshotState
     }
     /// A refresh is running: a read is in flight or polling continues.
-    private(set) var isLoading = false
+    @Published private(set) var isLoading = false
     /// Why the last refresh failed while the earlier report stays shown.
-    private(set) var refreshFailure: String?
+    @Published private(set) var refreshFailure: String?
     /// When the state was last read from the Host.
-    private(set) var readAt: Date?
+    @Published private(set) var readAt: Date?
     /// The plugin release behind the shown state, when its read learned it.
-    private(set) var pluginVersion: PluginVersion?
+    @Published private(set) var pluginVersion: PluginVersion?
     /// Called after the state or the Claude Code limits choice changes, so
     /// the widgets' snapshot can follow.
-    @ObservationIgnored var didChange: (@MainActor () -> Void)?
+    var didChange: (@MainActor () -> Void)?
     /// Advanced when visible surfaces should start polling again.
-    private(set) var refreshGeneration = 0
-    var claudeLimitsEnabled: Bool {
+    @Published private(set) var refreshGeneration = 0
+    @Published var claudeLimitsEnabled: Bool {
         didSet {
             guard oldValue != claudeLimitsEnabled else { return }
             defaults.set(claudeLimitsEnabled, forKey: preferenceKey)
@@ -124,21 +123,21 @@ final class AgentUsageStore {
     /// Whether a failed refresh is retried without another pull.
     var isRetryingRefresh: Bool { refreshFailure != nil && pollingInterval != nil }
 
-    @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private let preferenceKey: String
-    @ObservationIgnored private let read: @MainActor (String, Bool) async throws -> Reading
-    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
-    @ObservationIgnored private var request: UUID?
-    @ObservationIgnored private var lastRead: ContinuousClock.Instant?
-    @ObservationIgnored private var consecutiveFailures = 0
-    @ObservationIgnored private var consecutiveWaits = 0
-    @ObservationIgnored private var pendingPause: Task<Void, any Error>?
-    @ObservationIgnored private var readWaiters: [UUID: CheckedContinuation<Void, Never>] = [:]
+    private let defaults: UserDefaults
+    private let preferenceKey: String
+    private let read: @MainActor (String, Bool) async throws -> Reading
+    private let sleep: @Sendable (Duration) async throws -> Void
+    private var request: UUID?
+    private var lastRead: ContinuousClock.Instant?
+    private var consecutiveFailures = 0
+    private var consecutiveWaits = 0
+    private var pendingPause: Task<Void, any Error>?
+    private var readWaiters: [UUID: CheckedContinuation<Void, Never>] = [:]
     /// Reads started so far; each read is numbered by it.
-    @ObservationIgnored private var readsStarted = 0
+    private var readsStarted = 0
     /// For each Account file change still to be shown, the reads started
     /// when it was written: any later read shows it.
-    @ObservationIgnored private var accountChangeWrites: [UUID: Int] = [:]
+    private var accountChangeWrites: [UUID: Int] = [:]
 
     convenience init(hostID: Host.ID, transports: any NotificationTransportProvider,
         defaults: UserDefaults = .standard,

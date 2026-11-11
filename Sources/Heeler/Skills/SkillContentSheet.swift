@@ -42,7 +42,7 @@ struct SkillContentSheet: View {
             ScrollView {
                 Text(document)
                     .font(.footnote)
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)

@@ -4,7 +4,7 @@ import SwiftUI
 /// `authorized_keys` line (generated on device, never exported beyond its
 /// public half); the password goes straight to the Keychain via `HostStore`.
 struct HostFormView: View {
-    let store: HostStore
+    @ObservedObject var store: HostStore
     var editing: Host?
     var onSaved: ((Host) -> Void)?
     /// Starts in User, for a prefill that already says where the Host is.
@@ -57,7 +57,7 @@ struct HostFormView: View {
                 formSections
             }
             .environment(\.editMode, .constant(isEditingRoutes ? .active : .inactive))
-            .onChange(of: draft.routes.count) { _, count in
+            .onChangeCompat(of: draft.routes.count) { _, count in
                 if count < 2 { isEditingRoutes = false }
             }
             .navigationDestination(for: HostRoutePage.self) { page in
@@ -267,7 +267,7 @@ struct HostFormView: View {
                 Text("RSA Key").tag(Host.AuthMethod.rsaKey)
                 Text("Password").tag(Host.AuthMethod.password)
             }
-            .onChange(of: draft.authMethod) {
+            .onChangeCompat(of: draft.authMethod) { _, _ in
                 didCopyKeyLine = false
                 if draft.authMethod == .rsaKey,
                    rsaPublicKeyLine == nil,

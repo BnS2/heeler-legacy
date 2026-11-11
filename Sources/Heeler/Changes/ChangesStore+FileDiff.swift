@@ -1,14 +1,13 @@
+import Combine
 import Foundation
-import Observation
 
 /// Owns file presentation without making a file read part of list refresh.
 @MainActor
-@Observable
-final class FileDiffPresenter {
-    private(set) var current: FileDiffStore?
-    @ObservationIgnored private let read:
+final class FileDiffPresenter: ObservableObject {
+    @Published private(set) var current: FileDiffStore?
+    private let read:
         @Sendable (FilePatchRequest) async throws -> FilePatch
-    @ObservationIgnored private let now: @MainActor () -> Date
+    private let now: @MainActor () -> Date
 
     init(
         read: @escaping @Sendable (FilePatchRequest) async throws -> FilePatch,

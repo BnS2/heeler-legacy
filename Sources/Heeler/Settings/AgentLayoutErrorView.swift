@@ -6,7 +6,7 @@ import SwiftUI
 /// after confirmation. Color carries the severity in the icon and the
 /// button, not in the copy, so the notice reads as a calm explanation.
 struct AgentLayoutErrorView: View {
-    let editor: AgentListFieldsEditor
+    @ObservedObject var editor: AgentListFieldsEditor
     @State private var confirmingReset = false
 
     var body: some View {

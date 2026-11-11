@@ -185,7 +185,7 @@ struct StartAgentView: View {
                             Text("Detecting installed Agents…")
                         }
                     case .loaded where store.availableAgentKinds.isEmpty && store.availableTemplates.isEmpty:
-                        ContentUnavailableView(
+                        CompatUnavailableView(
                             "No Agents Found",
                             systemImage: "magnifyingglass",
                             description: Text(
@@ -293,7 +293,7 @@ struct StartAgentView: View {
             }
             // The last footer ends clear of the sheet's rounded corners
             // when the form fits it.
-            .contentMargins(.bottom, 20, for: .scrollContent)
+            .contentMarginsCompat(.bottom, 20)
             // The form grows as a Host adds its Agent and argument rows; a
             // fixed form cut them off under a scroll.
             .consoleSheetPage()
@@ -318,7 +318,7 @@ struct StartAgentView: View {
                     }
                 }
             }
-            .onChange(of: store.state) {
+            .onChangeCompat(of: store.state) { _, _ in
                 if case .started(let id) = store.state {
                     dismiss()
                     onStarted(id)

@@ -97,7 +97,7 @@ struct ConsoleWorkspaceCardRow: ViewModifier {
                     bottom: bottom, trailing: Metrics.padding))
             .listRowSeparator(.hidden)
             // A row opens its Agent; only a header's fold button points.
-            .navigationLinkIndicatorVisibility(.hidden)
+            .navigationLinkIndicatorHiddenCompat()
             .listRowBackground(
                 Metrics.fill(inSidebar: isSidebarColumn)
                     // The selection shows only beside the sidebar, where

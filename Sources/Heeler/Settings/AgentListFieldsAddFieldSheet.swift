@@ -6,7 +6,7 @@ import SwiftUI
 /// Neither offers a field already on either side of the slot, and only the
 /// right offers the Status Badge and the Changes totals.
 struct AgentListFieldsAddFieldSheet: View {
-    let editor: AgentListFieldsEditor
+    @ObservedObject var editor: AgentListFieldsEditor
     let destination: AgentListFieldsEditorDestination
     var hostName: String = ""
     var followsPlugin = true
@@ -77,7 +77,7 @@ struct AgentListFieldsAddFieldSheet: View {
                         TextField("$custom_name", text: $customName)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .fontDesign(.monospaced)
+                            .fontDesignCompat(.monospaced)
                         Button("Add Custom Field") {
                             guard let token = AgentLayoutTokensEditing.customToken(
                                 from: customName, alreadyIn: slotFields)
@@ -106,7 +106,7 @@ struct AgentListFieldsAddFieldSheet: View {
                         TextField("Label name", text: $labelName)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .fontDesign(.monospaced)
+                            .fontDesignCompat(.monospaced)
                         Button("Add Label") {
                             guard let token = AgentLayoutTokensEditing.labelToken(
                                 from: labelName, alreadyIn: slotFields)
@@ -123,7 +123,7 @@ struct AgentListFieldsAddFieldSheet: View {
                     }
                 }
             }
-            .listSectionSpacing(.compact)
+            .listSectionSpacingCompactCompat()
             .navigationTitle("Add to Row \(destination.rowIndex + 1)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -158,7 +158,7 @@ struct AgentListFieldsAddFieldSheet: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: token.rawValue)
-                        .fontDesign(.monospaced)
+                        .fontDesignCompat(.monospaced)
                         .foregroundStyle(Color.primary)
                     Text(AgentLayoutTokensEditing.description(for: token))
                         .font(.caption)

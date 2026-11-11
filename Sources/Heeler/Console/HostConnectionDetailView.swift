@@ -77,7 +77,7 @@ struct HostConnectionDetailPresentation: Equatable {
 struct HostConnectionDetailView: View {
     let presentation: HostConnectionDetailPresentation
     let host: Host
-    let catalog: HostStore
+    @ObservedObject var catalog: HostStore
     /// The presenting Console's: inside the sheet, the size class describes
     /// the sheet, not the screen.
     let sheetPresentation: ConsoleSheetPresentation
@@ -113,7 +113,7 @@ struct HostConnectionDetailView: View {
 struct HostConnectionDetailContent: View {
     let presentation: HostConnectionDetailPresentation
     let host: Host
-    let catalog: HostStore
+    @ObservedObject var catalog: HostStore
     let sheetPresentation: ConsoleSheetPresentation
     let isRetryInFlight: Bool
     var onStop: (() -> Void)? = nil
@@ -242,8 +242,12 @@ private struct StatusFormPageBackground: ViewModifier {
     func body(content: Content) -> some View {
         switch presentation {
         case .form:
-            content.containerBackground(
-                ConsoleStatusSheetPresentationModifier.formBackground, for: .navigation)
+            if #available(iOS 18, *) {
+                content.containerBackground(
+                    ConsoleStatusSheetPresentationModifier.formBackground, for: .navigation)
+            } else {
+                content
+            }
         case .inheritedSheet:
             content
         }

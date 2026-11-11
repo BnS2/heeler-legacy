@@ -46,8 +46,8 @@ struct ChatRowActions {
 }
 
 /// A pull past the timeline's top, as the Load Earlier row shows it.
-@MainActor @Observable
-final class ChatOlderPull {
+@MainActor
+final class ChatOlderPull: ObservableObject {
     enum Phase: Equatable {
         case idle
         /// Pulled, not yet far enough to load.
@@ -58,7 +58,7 @@ final class ChatOlderPull {
         case requested
     }
 
-    var phase: Phase = .idle
+    @Published var phase: Phase = .idle
 }
 
 /// The Chat timeline: a collection view of hosted SwiftUI rows that opens at
@@ -183,6 +183,8 @@ final class ChatTimelineController: UIViewController, UICollectionViewDelegate {
     /// A nil size leaves the system's in place. Overrides are read only
     /// once set: reading an unset one throws.
     func setTypography(size: DynamicTypeSize?, font: ChatFontOption) {
+        // iOS 16: trait overrides need iOS 17; older systems keep the system size and font.
+        guard #available(iOS 17, *) else { return }
         let sizeTrait = UITraitPreferredContentSizeCategory.self
         if let size {
             let category = UIContentSizeCategory(size)
@@ -249,9 +251,11 @@ final class ChatTimelineController: UIViewController, UICollectionViewDelegate {
             collectionView.dequeueConfiguredReusableCell(using: registration, for: indexPath, item: id)
         }
         view = collectionView
-        registerForTraitChanges([UITraitPreferredContentSizeCategory.self, ChatFontTrait.self]) {
-            (self: Self, _: UITraitCollection) in
-            self.layout.invalidateLayout()
+        if #available(iOS 17, *) {
+            registerForTraitChanges([UITraitPreferredContentSizeCategory.self, ChatFontTrait.self]) {
+                (self: Self, _: UITraitCollection) in
+                self.layout.invalidateLayout()
+            }
         }
     }
 

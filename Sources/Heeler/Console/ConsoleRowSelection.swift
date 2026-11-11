@@ -44,7 +44,7 @@ struct ConsoleRowSelectionContent: ViewModifier {
     func body(content: Content) -> some View {
         if isSidebarColumn {
             content
-                .environment(\.backgroundProminence, .standard)
+                .backgroundProminenceStandardCompat()
                 .foregroundStyle(Color.primary)
         } else {
             content

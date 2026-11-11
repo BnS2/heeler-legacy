@@ -1,6 +1,6 @@
+import Combine
 import CoreGraphics
 import Foundation
-import Observation
 
 /// Focused Direct Input chrome policy: software-keyboard coverage, keyboard
 /// layout, and the Hide/Show accessibility copy the switcher control speaks.
@@ -73,9 +73,8 @@ struct AgentDirectInputPresentation: Equatable, Sendable {
 /// from ``TerminalKeyboardHandoff``, which carries intent across Agent switches
 /// that tear the whole view down.
 @MainActor
-@Observable
-final class DirectInputKeyboardIntent {
-    private(set) var wantsKeyboard = false
+final class DirectInputKeyboardIntent: ObservableObject {
+    @Published private(set) var wantsKeyboard = false
 
     func setWantsKeyboard(_ wantsKeyboard: Bool) {
         self.wantsKeyboard = wantsKeyboard

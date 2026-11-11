@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// What a Stop tap came to. `.sent` means only that the keys left Heeler;
 /// whether the Agent stopped shows in its status.
@@ -122,8 +122,7 @@ enum AgentComposerCollapse {
 /// takes Send's place: the second tap of a double tap would interrupt the
 /// turn the prompt was meant to queue behind.
 @MainActor
-@Observable
-final class AgentComposerStopStore {
+final class AgentComposerStopStore: ObservableObject {
     enum Phase: Equatable {
         case ready
         /// The keys are on their way, or went and the Agent is still Working.
@@ -136,22 +135,22 @@ final class AgentComposerStopStore {
         case failed(String)
     }
 
-    private(set) var phase: Phase = .ready
+    @Published private(set) var phase: Phase = .ready
     /// Stop stays Send for a moment after a send emptied the draft.
-    private(set) var isHeldAfterSend = false
-    @ObservationIgnored private let sendHold: Duration
-    @ObservationIgnored private let sleep: @Sendable (Duration) async throws -> Void
-    @ObservationIgnored private let now: @Sendable () -> ContinuousClock.Instant
+    @Published private(set) var isHeldAfterSend = false
+    private let sendHold: Duration
+    private let sleep: @Sendable (Duration) async throws -> Void
+    private let now: @Sendable () -> ContinuousClock.Instant
     /// Bumped by every tap and every status change, so a wait that was
     /// overtaken cannot overwrite the newer phase.
-    @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var holdGeneration = 0
+    private var generation = 0
+    private var holdGeneration = 0
     /// What the running stop says once its window passes.
-    @ObservationIgnored private var unconfirmedNotice = AgentStopWait.escape.unconfirmedNotice
+    private var unconfirmedNotice = AgentStopWait.escape.unconfirmedNotice
     /// Attempts whose keys are still on their way, and when the last one
     /// ended. Status changes leave both alone; only a minimum gap reads them.
-    @ObservationIgnored private var attemptsOnTheirWay = 0
-    @ObservationIgnored private var lastAttemptEnded: ContinuousClock.Instant?
+    private var attemptsOnTheirWay = 0
+    private var lastAttemptEnded: ContinuousClock.Instant?
 
     init(
         sendHold: Duration = .seconds(1),

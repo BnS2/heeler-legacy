@@ -173,7 +173,7 @@ private struct ChatUserBubble: View {
         ChatBubble {
             VStack(alignment: .trailing, spacing: 6) {
                 if let command = message.command {
-                    (Text("/\(command.name)").fontDesign(.monospaced).foregroundStyle(.tint)
+                    (Text("/\(command.name)").fontDesignCompat(.monospaced).foregroundColor(.accentColor)
                         + Text(command.arguments.isEmpty ? "" : " \(command.arguments)"))
                         .font(.body)
                 } else {
@@ -907,7 +907,7 @@ private struct ChatToolOutputText: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(8)
         }
-        .scrollBounceBehavior(.basedOnSize)
+        .scrollBounceBasedOnSizeCompat()
         .frame(maxHeight: maximumHeight)
         .fixedSize(horizontal: false, vertical: true)
         .background(themeColors.background, in: .rect(cornerRadius: 8))

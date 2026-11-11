@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 typealias ShellTerminalCreator =
     @Sendable (ShellTerminalCreationRequest) async throws -> ShellTerminalIdentity
@@ -61,31 +61,30 @@ struct OpenTerminalFailure: Identifiable, Equatable {
 /// verified before reuse — one closed on the desktop, or lost to a server
 /// restart, is forgotten and recreated under the same explicit tap.
 @MainActor
-@Observable
-final class AgentOpenTerminalStore {
+final class AgentOpenTerminalStore: ObservableObject {
     let agentID: ConsoleAgent.ID
     let creationRequest: ShellTerminalCreationRequest?
 
-    private(set) var shell: ShellTerminalStore?
-    private(set) var isOpening = false
-    private(set) var isReturning = false
-    private(set) var isClosingTerminal = false
-    private(set) var failure: OpenTerminalFailure?
-    private(set) var closeFailureMessage: String?
+    @Published private(set) var shell: ShellTerminalStore?
+    @Published private(set) var isOpening = false
+    @Published private(set) var isReturning = false
+    @Published private(set) var isClosingTerminal = false
+    @Published private(set) var failure: OpenTerminalFailure?
+    @Published private(set) var closeFailureMessage: String?
 
-    @ObservationIgnored private let createTerminal: ShellTerminalCreator
-    @ObservationIgnored private let runTerminal: TerminalSessionRunner
-    @ObservationIgnored private let leaveAgent: @MainActor () -> Task<Void, Never>
-    @ObservationIgnored private let rejoinAgent: @MainActor () -> Void
-    @ObservationIgnored private let isDetailOnStage: () -> Bool
-    @ObservationIgnored private let recallTerminal: @MainActor () -> ShellTerminalIdentity?
-    @ObservationIgnored private let rememberTerminal: @MainActor (ShellTerminalIdentity) -> Void
-    @ObservationIgnored private let forgetTerminal: @MainActor () -> Void
-    @ObservationIgnored private let verifyTerminal:
+    private let createTerminal: ShellTerminalCreator
+    private let runTerminal: TerminalSessionRunner
+    private let leaveAgent: @MainActor () -> Task<Void, Never>
+    private let rejoinAgent: @MainActor () -> Void
+    private let isDetailOnStage: () -> Bool
+    private let recallTerminal: @MainActor () -> ShellTerminalIdentity?
+    private let rememberTerminal: @MainActor (ShellTerminalIdentity) -> Void
+    private let forgetTerminal: @MainActor () -> Void
+    private let verifyTerminal:
         @Sendable (ShellTerminalIdentity) async throws -> Bool
-    @ObservationIgnored private let closeRemoteTerminal:
+    private let closeRemoteTerminal:
         @Sendable (ShellTerminalIdentity) async throws -> Void
-    @ObservationIgnored private var transportGeneration: UInt64?
+    private var transportGeneration: UInt64?
 
     init(
         agent: ConsoleAgent,
@@ -274,8 +273,7 @@ final class AgentOpenTerminalStore {
 /// lifecycle needed to replace that pipeline across Host generations and to
 /// wait for teardown before the local destination changes.
 @MainActor
-@Observable
-final class ShellTerminalStore {
+final class ShellTerminalStore: ObservableObject {
     private enum LifecycleState {
         case active
         case rejoinRequired
@@ -284,18 +282,18 @@ final class ShellTerminalStore {
 
     let identity: ShellTerminalIdentity
     let input = TerminalInputController()
-    private(set) var terminal: AttachTerminalStore
+    @Published private(set) var terminal: AttachTerminalStore
 
-    @ObservationIgnored private var takeover: Bool
-    @ObservationIgnored private let runTerminal: TerminalSessionRunner
-    @ObservationIgnored private let isOnStage: @MainActor () -> Bool
-    @ObservationIgnored private var transportGeneration: UInt64?
-    @ObservationIgnored private var lifecycleState = LifecycleState.active
-    @ObservationIgnored private var lifecycleTask: Task<Void, Never>?
-    @ObservationIgnored private var lifecycleID: UInt64 = 0
-    @ObservationIgnored private var isReplacing = false
-    @ObservationIgnored private var replacementID: UInt64 = 0
-    @ObservationIgnored private var activationRecovery = TerminalRecoveryGenerationLatch()
+    private var takeover: Bool
+    private let runTerminal: TerminalSessionRunner
+    private let isOnStage: @MainActor () -> Bool
+    private var transportGeneration: UInt64?
+    private var lifecycleState = LifecycleState.active
+    private var lifecycleTask: Task<Void, Never>?
+    private var lifecycleID: UInt64 = 0
+    private var isReplacing = false
+    private var replacementID: UInt64 = 0
+    private var activationRecovery = TerminalRecoveryGenerationLatch()
 
     init(
         identity: ShellTerminalIdentity,

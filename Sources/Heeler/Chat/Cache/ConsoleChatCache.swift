@@ -1,25 +1,24 @@
+import Combine
 import Foundation
-import Observation
 
 /// Saved Chat entry points are display data, never live Agent inventory.
 /// Notifications, Live Activities and command eligibility keep using the
 /// Console's authoritative projection.
 @MainActor
-@Observable
-final class ConsoleChatCache {
-    private(set) var records: [Host.ID: [ChatCachedAgent]] = [:]
+final class ConsoleChatCache: ObservableObject {
+    @Published private(set) var records: [Host.ID: [ChatCachedAgent]] = [:]
     /// The Workspace structure of each Host's last snapshot, saved with its
     /// entries.
-    private(set) var structures: [Host.ID: [ChatCachedWorkspace]] = [:]
-    @ObservationIgnored private let cache: any ChatTranscriptCache
-    @ObservationIgnored private var hosts: [Host.ID: Host] = [:]
-    @ObservationIgnored private var loads: [Host.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var writes: [Host.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var revisions: [Host.ID: Int] = [:]
-    @ObservationIgnored private var confirmed: [ConsoleAgent.ID: ConfirmedSession] = [:]
+    @Published private(set) var structures: [Host.ID: [ChatCachedWorkspace]] = [:]
+    private let cache: any ChatTranscriptCache
+    private var hosts: [Host.ID: Host] = [:]
+    private var loads: [Host.ID: Task<Void, Never>] = [:]
+    private var writes: [Host.ID: Task<Void, Never>] = [:]
+    private var revisions: [Host.ID: Int] = [:]
+    private var confirmed: [ConsoleAgent.ID: ConfirmedSession] = [:]
     /// Live updates must merge with the disk directory, not cancel its
     /// restore before a missing session field can reuse a known binding.
-    @ObservationIgnored private var pendingUpdates: [Host.ID: [Update]] = [:]
+    private var pendingUpdates: [Host.ID: [Update]] = [:]
 
     private enum Update {
         case snapshot([ConsoleAgent])

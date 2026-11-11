@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The New Workspace remote-directory browser's model (#280): starting at
 /// the remote home directory, it lists one absolute path's subdirectories at
@@ -7,32 +7,31 @@ import Observation
 /// tests can script a fake lister. Selecting a folder updates the Workspace
 /// draft; a failed listing keeps the prior path and filter on screen.
 @MainActor
-@Observable
-final class RemoteDirectoryBrowser: Identifiable {
+final class RemoteDirectoryBrowser: ObservableObject, Identifiable {
     typealias ResolveHome = () async throws -> String
     typealias ListDirectories = (String) async throws -> RemoteDirectoryListing
 
     /// The last successfully listed path; nil until the home probe answers.
-    private(set) var currentPath: String?
+    @Published private(set) var currentPath: String?
     /// The current path's subdirectories, as the last listing reported.
-    private(set) var directories: [String] = []
+    @Published private(set) var directories: [String] = []
     /// The names in `directories` that are symbolic links.
-    private(set) var symbolicLinks: Set<String> = []
+    @Published private(set) var symbolicLinks: Set<String> = []
     /// Whether the last listing hit the server-side entry cap.
-    private(set) var truncated = false
-    private(set) var isLoading = false
+    @Published private(set) var truncated = false
+    @Published private(set) var isLoading = false
     /// User-facing message for the last home or listing failure.
-    private(set) var errorMessage: String?
+    @Published private(set) var errorMessage: String?
     /// Why the owner turned down the folder it was offered, shown in place
     /// until the browser moves to another folder.
-    var refusal: String?
+    @Published var refusal: String?
     /// Narrows the current listing only; it never walks the tree.
-    var filter = ""
+    @Published var filter = ""
 
     private let resolveHome: ResolveHome
     private let list: ListDirectories
-    private var loadTask: Task<Void, Never>?
-    private var requestedPath: String?
+    @Published private var loadTask: Task<Void, Never>?
+    @Published private var requestedPath: String?
 
     init(resolveHome: @escaping ResolveHome, list: @escaping ListDirectories) {
         self.resolveHome = resolveHome

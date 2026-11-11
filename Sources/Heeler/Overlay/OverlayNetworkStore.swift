@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import HeelerOverlay
-import Observation
 
 enum OverlayNetworkPrimaryAction: Equatable {
     case signIn, connect, connecting, disconnect
@@ -55,8 +55,7 @@ enum OverlayNetworkStoreError: Error, Equatable {
 /// Every save publishes the catalog to the `OverlayNetworkRuntime`
 /// synchronously and then lets it stop nodes the change made stale.
 @MainActor
-@Observable
-final class OverlayNetworkStore {
+final class OverlayNetworkStore: ObservableObject {
     private static let defaultsKey = "overlayNetworks"
     private static let knownLoginsKey = "overlayKnownTailscaleLogins"
     private static let catalogVersion = 1
@@ -129,43 +128,43 @@ final class OverlayNetworkStore {
         let networks: PersistedNetworks
     }
 
-    private(set) var networks: [OverlayNetwork]
-    private(set) var catalogLoadError: OverlayNetworkStoreError?
+    @Published private(set) var networks: [OverlayNetwork]
+    @Published private(set) var catalogLoadError: OverlayNetworkStoreError?
     /// Last observed node status per network; absent means never started.
-    private(set) var statuses: [OverlayNetwork.ID: OverlayNodeStatus] = [:]
+    @Published private(set) var statuses: [OverlayNetwork.ID: OverlayNodeStatus] = [:]
     /// The failure of the last explicit Connect, cleared by the next one.
-    private(set) var connectFailures: [OverlayNetwork.ID: TransportError] = [:]
-    private(set) var connecting: Set<OverlayNetwork.ID> = []
-    @ObservationIgnored private var connectAttempts: [OverlayNetwork.ID: Task<(any Error)?, Never>] = [:]
+    @Published private(set) var connectFailures: [OverlayNetwork.ID: TransportError] = [:]
+    @Published private(set) var connecting: Set<OverlayNetwork.ID> = []
+    private var connectAttempts: [OverlayNetwork.ID: Task<(any Error)?, Never>] = [:]
     /// What each network's node last reported about itself and its peers;
     /// absent or empty while it has no node.
-    private(set) var details: [OverlayNetwork.ID: OverlayNodeDetails] = [:]
-    private(set) var signingOut: Set<OverlayNetwork.ID> = []
+    @Published private(set) var details: [OverlayNetwork.ID: OverlayNodeDetails] = [:]
+    @Published private(set) var signingOut: Set<OverlayNetwork.ID> = []
     /// The failure of the last Sign Out, cleared by the next one or Connect.
-    private(set) var signOutFailures: [OverlayNetwork.ID: TransportError] = [:]
+    @Published private(set) var signOutFailures: [OverlayNetwork.ID: TransportError] = [:]
     /// Tailscale networks signed out and not connected again since.
-    private(set) var signedOut: Set<OverlayNetwork.ID> = []
+    @Published private(set) var signedOut: Set<OverlayNetwork.ID> = []
     /// A presentation hint, never an authorization decision. Only a live
     /// node can confirm whether a saved login is still usable.
-    private var knownTailscaleLogins: Set<OverlayNetwork.ID> = []
-    private var pendingBrowserSignIns: Set<OverlayNetwork.ID> = []
-    @ObservationIgnored private var signInResumeTask: Task<Void, Never>?
+    @Published private var knownTailscaleLogins: Set<OverlayNetwork.ID> = []
+    @Published private var pendingBrowserSignIns: Set<OverlayNetwork.ID> = []
+    private var signInResumeTask: Task<Void, Never>?
     /// The node ID of the device's ZeroTier identity in the Keychain.
-    private(set) var zeroTierIdentityNodeID: String?
+    @Published private(set) var zeroTierIdentityNodeID: String?
     /// No identity could be created ahead of time (the generator failed,
     /// or a node is minting its own); one appears after the first connect.
-    private(set) var zeroTierIdentityDeferred = false
+    @Published private(set) var zeroTierIdentityDeferred = false
 
     let runtime: OverlayNetworkRuntime
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults?
-    @ObservationIgnored private let secrets: any SecretStore
-    @ObservationIgnored private var entries: [PersistedNetworks.Entry] = []
+    private nonisolated(unsafe) let defaults: UserDefaults?
+    private let secrets: any SecretStore
+    private var entries: [PersistedNetworks.Entry] = []
     /// In-memory counters per network: settings-or-secret changes rebuild
     /// the node; secret changes also drop a Tailscale login. A rename
     /// bumps neither.
-    @ObservationIgnored private var revisions: [OverlayNetwork.ID: Int] = [:]
-    @ObservationIgnored private var secretRevisions: [OverlayNetwork.ID: Int] = [:]
+    private var revisions: [OverlayNetwork.ID: Int] = [:]
+    private var secretRevisions: [OverlayNetwork.ID: Int] = [:]
 
     init(
         defaults: UserDefaults = .standard,

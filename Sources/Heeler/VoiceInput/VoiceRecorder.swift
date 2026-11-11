@@ -71,13 +71,27 @@ final class SystemVoiceRecorder: VoiceRecorder {
     }
 
     func requestPermission() async -> Bool {
-        switch AVAudioApplication.shared.recordPermission {
+        if #available(iOS 17, *) {
+            switch AVAudioApplication.shared.recordPermission {
+            case .granted:
+                return true
+            case .denied:
+                return false
+            case .undetermined:
+                return await AVAudioApplication.requestRecordPermission()
+            @unknown default:
+                return false
+            }
+        }
+        switch AVAudioSession.sharedInstance().recordPermission {
         case .granted:
             return true
         case .denied:
             return false
         case .undetermined:
-            return await AVAudioApplication.requestRecordPermission()
+            return await withCheckedContinuation { cont in
+                AVAudioSession.sharedInstance().requestRecordPermission { cont.resume(returning: $0) }
+            }
         @unknown default:
             return false
         }

@@ -1,20 +1,19 @@
+import Combine
 import Foundation
-import Observation
 
 /// The device's Launch Presets (#622), in the order the user keeps them.
 /// Saved as JSON in the user defaults; a preset this app cannot read is
 /// dropped rather than failing the rest.
 @MainActor
-@Observable
-final class LaunchPresetStore {
+final class LaunchPresetStore: ObservableObject {
     struct SaveError: Error, Equatable {
         let message: String
     }
 
     static let defaultsKey = "launch-presets.v1"
 
-    private(set) var presets: [LaunchPreset] = []
-    @ObservationIgnored private let defaults: UserDefaults
+    @Published private(set) var presets: [LaunchPreset] = []
+    private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

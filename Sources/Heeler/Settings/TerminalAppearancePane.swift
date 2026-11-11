@@ -8,9 +8,9 @@ import SwiftUI
 /// smaller, fake terminal would only be a worse copy of what the user is
 /// already looking at.
 struct TerminalAppearancePane: View {
-    let themes: TerminalThemeSettings
-    let zoom: TerminalZoomSettings
-    let fonts: TerminalFontSettings
+    @ObservedObject var themes: TerminalThemeSettings
+    @ObservedObject var zoom: TerminalZoomSettings
+    @ObservedObject var fonts: TerminalFontSettings
     @Environment(\.themeAppearance) private var themeAppearance
 
     private let columns = [GridItem(.adaptive(minimum: 104), spacing: 10)]
@@ -162,7 +162,7 @@ struct TerminalThemeSwatchCard: View {
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .strokeBorder(
-                    isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.separator),
+                    isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(Color(uiColor: .separator)),
                     lineWidth: isSelected ? 2 : 0.5)
         }
     }

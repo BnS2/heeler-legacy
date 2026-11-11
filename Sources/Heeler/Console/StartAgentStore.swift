@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The new-agent flow's form logic (#12, User Story 8): pick a Host, pick a
 /// launch target (an existing Workspace, or a new one at a remote directory),
@@ -12,8 +12,7 @@ import Observation
 /// Kept off the SSH types (standing repo rule): it talks to injected closures
 /// over the `ConsoleStore`, so it is testable against a scripted transport.
 @MainActor
-@Observable
-final class StartAgentStore {
+final class StartAgentStore: ObservableObject {
     enum State: Equatable {
         /// Editing the form; no start in flight.
         case editing
@@ -103,7 +102,7 @@ final class StartAgentStore {
     /// so the form collapses to the agent fields.
     let origin: LaunchOrigin?
 
-    var selectedHostID: Host.ID? {
+    @Published var selectedHostID: Host.ID? {
         didSet {
             // A workspace belongs to one Host; switching Hosts drops a stale
             // pick so it can never target the wrong session.
@@ -157,15 +156,15 @@ final class StartAgentStore {
     /// The user's explicit pick; nil means "follow the default above". Kept
     /// separate so a snapshot arriving after the sheet opens still gets to
     /// supply the default.
-    private var pickedWorkspaceID: String?
+    @Published private var pickedWorkspaceID: String?
     /// The unique live-agent name required by herdr protocol 17. Optional in
     /// the form: empty falls back to a kind-derived name (`claude`,
     /// `claude-2`, …), mirroring how the herdr TUI labels unnamed agents.
-    var name: String = ""
+    @Published var name: String = ""
     /// The canonical kind selected from the Host availability probe. Each
     /// probe defaults it to the kind last started, when this Host has it,
     /// else the Host's first.
-    var selectedAgentKind: SupportedAgentKind? {
+    @Published var selectedAgentKind: SupportedAgentKind? {
         didSet {
             if selectedAgentKind != nil { selectedTemplate = nil }
             // Another harness leaves the preset behind.
@@ -174,13 +173,13 @@ final class StartAgentStore {
     }
     /// The Launch Preset the Agent starts from (#622); nil starts the
     /// harness as the form describes it. Picking one picks its harness.
-    var selectedPresetID: LaunchPreset.ID? {
+    @Published var selectedPresetID: LaunchPreset.ID? {
         didSet {
             if let selectedPreset, selectedAgentKind != selectedPreset.kind { selectedAgentKind = selectedPreset.kind }
         }
     }
     /// The Template selected in place of a kind.
-    var selectedTemplate: AgentTemplate? {
+    @Published var selectedTemplate: AgentTemplate? {
         didSet { if selectedTemplate != nil { selectedAgentKind = nil } }
     }
     /// Either one, as the form's picker holds it.
@@ -202,11 +201,11 @@ final class StartAgentStore {
     /// The editor disables smart punctuation at the UIKit input-trait layer;
     /// parsing still normalizes any smart characters supplied by paste or a
     /// third-party keyboard without mutating the live editing buffer.
-    var arguments: String = ""
+    @Published var arguments: String = ""
     /// Existing Workspace vs New Workspace on the Console-originated form.
     /// Switching target drops an incompatible Worktree request so it cannot
     /// ride along with a launch that has no source Workspace.
-    var launchTarget: LaunchTarget = .existingWorkspace {
+    @Published var launchTarget: LaunchTarget = .existingWorkspace {
         didSet {
             if launchTarget != oldValue {
                 startsInNewWorktree = false
@@ -217,7 +216,7 @@ final class StartAgentStore {
     }
     /// Remote directory for a New Workspace launch. Optional: empty resolves
     /// to the Host's home directory at submit. Trimmed before use.
-    var newWorkspaceDirectory: String = ""
+    @Published var newWorkspaceDirectory: String = ""
     /// Selecting a directory switches the draft destination without starting
     /// an Agent. Dismissing the browser never changes the current selection.
     func applyBrowsedDirectory(_ path: String) {
@@ -241,29 +240,29 @@ final class StartAgentStore {
     }
     /// Optional label for a New Workspace launch. Empty or whitespace
     /// becomes nil so herdr applies its default.
-    var newWorkspaceLabel: String = ""
+    @Published var newWorkspaceLabel: String = ""
     /// Optional label for the tab the launch creates. Empty or whitespace
     /// becomes nil so herdr or a title plugin names the tab. Unlike the
     /// agent's name it is free text: herdr's slug rule applies to agents,
     /// not tabs.
-    var tabLabel: String = ""
+    @Published var tabLabel: String = ""
     /// Whether the launch targets a fresh git worktree of the selected
     /// workspace's repository instead of the workspace itself (#97).
-    var startsInNewWorktree = false
+    @Published var startsInNewWorktree = false
     /// Optional branch for the new worktree; empty uses herdr's generated
     /// `worktree/<name>` branch. Validated client-side because herdr folds
     /// every git failure into one raw-stderr error code.
-    var worktreeBranch: String = ""
+    @Published var worktreeBranch: String = ""
     /// Optional base commit-ish for the new branch; empty branches off HEAD.
     /// Not validated: any rev syntax is legal here, so the server's message
     /// passthrough is the honest feedback.
-    var worktreeBase: String = ""
+    @Published var worktreeBase: String = ""
 
-    private(set) var state: State = .editing
-    private(set) var agentDiscoveryState: AgentDiscoveryState = .idle
-    private(set) var availableAgentKinds: [SupportedAgentKind] = []
+    @Published private(set) var state: State = .editing
+    @Published private(set) var agentDiscoveryState: AgentDiscoveryState = .idle
+    @Published private(set) var availableAgentKinds: [SupportedAgentKind] = []
     /// The Host's Templates, offered beside the kinds.
-    private(set) var availableTemplates: [AgentTemplate] = []
+    @Published private(set) var availableTemplates: [AgentTemplate] = []
 
     private let workspacesProvider: (Host.ID) -> [ConsoleWorkspace]
     /// The names already live on a Host, so a generated default never collides
@@ -293,7 +292,7 @@ final class StartAgentStore {
     private let awaitAgentVisible: (ConsoleAgent.ID) async -> Void
     private let isAgentListed: (ConsoleAgent.ID) -> Bool
     private let programExit: (ConsoleAgent.ID) -> ProgramExit?
-    @ObservationIgnored private let recents: RecentLaunchStore
+    private let recents: RecentLaunchStore
     /// The device's Launch Presets, read when the form shows them.
     private let presetsProvider: () -> [LaunchPreset]
     /// The variable a harness's Accounts set on a Host (its Accounts'
@@ -302,7 +301,7 @@ final class StartAgentStore {
     /// In-flight guard flipped synchronously before the first await, so a
     /// double-tap cannot dispatch the same command twice through the window
     /// before `state == .starting` disables the button.
-    private var isStarting = false
+    @Published private var isStarting = false
 
     init(
         hosts: [Host],

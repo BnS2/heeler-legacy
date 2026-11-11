@@ -1,7 +1,6 @@
 import CryptoKit
 import Foundation
 import HeelerSSH
-import Synchronization
 import Testing
 
 @testable import Heeler

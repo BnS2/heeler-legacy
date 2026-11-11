@@ -61,8 +61,12 @@ private struct ReadableColumnPage: ViewModifier {
 
     func body(content: Content) -> some View {
         // Zero rather than a branch, so a rotation keeps the list's state.
-        content.safeAreaPadding(
-            .horizontal, isInReadableColumn ? Self.titleOffset + contentMargin : 0)
+        if #available(iOS 17, *) {
+            content.safeAreaPadding(
+                .horizontal, isInReadableColumn ? Self.titleOffset + contentMargin : 0)
+        } else {
+            content.padding(.horizontal, isInReadableColumn ? Self.titleOffset + contentMargin : 0)
+        }
     }
 }
 

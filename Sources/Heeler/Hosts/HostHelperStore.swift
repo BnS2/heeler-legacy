@@ -1,12 +1,11 @@
+import Combine
 import Foundation
-import Observation
 
 /// One core Host's Host Helper as Host detail and the install sheet show it.
 /// Each read and action runs over a connection of its own, like the plugin's:
 /// a step that redialed partway could run twice.
 @MainActor
-@Observable
-final class HostHelperStore {
+final class HostHelperStore: ObservableObject {
     enum Reading: Equatable {
         case checking
         case read(HostHelperReading)
@@ -20,33 +19,33 @@ final class HostHelperStore {
         case turnOnLinger
     }
 
-    private(set) var reading = Reading.checking
+    @Published private(set) var reading = Reading.checking
     /// What an install would write, for the sheet to list before it does.
-    private(set) var plan: HostHelperInstallPlan?
+    @Published private(set) var plan: HostHelperInstallPlan?
     /// The action in flight.
-    private(set) var running: Action?
+    @Published private(set) var running: Action?
     /// Why the last action failed, in words the user can act on.
-    private(set) var failure: String?
+    @Published private(set) var failure: String?
 
     /// What a removal had to leave of the edits that go with the Helper.
-    @ObservationIgnored private var editsLeft: String?
+    private var editsLeft: String?
     /// Why the reading offers an install it cannot list.
-    @ObservationIgnored private var planFailure: String?
+    private var planFailure: String?
     /// How many actions have finished their work. A read begun under an older
     /// count may hold the Host as it was before that action, whose own read back
     /// has the last word.
-    @ObservationIgnored private var actionsDone = 0
+    private var actionsDone = 0
     /// An action has run and the Host has been read back: what else follows the
     /// Helper should look again.
-    @ObservationIgnored var onChanged: (@MainActor () -> Void)?
+    var onChanged: (@MainActor () -> Void)?
 
-    @ObservationIgnored private let connect: @Sendable () async throws -> any HerdrCoreTransport
-    @ObservationIgnored private let bundle: @Sendable () throws -> HostHelperBundle
-    @ObservationIgnored private let nonce: @Sendable () -> String
-    @ObservationIgnored private let healthGap: @Sendable () async throws -> Void
+    private let connect: @Sendable () async throws -> any HerdrCoreTransport
+    private let bundle: @Sendable () throws -> HostHelperBundle
+    private let nonce: @Sendable () -> String
+    private let healthGap: @Sendable () async throws -> Void
     /// Undoes what goes with the Helper over the removal's own connection, and says
     /// what it had to leave.
-    @ObservationIgnored private let undoEdits: @MainActor @Sendable (any HostServices) async throws -> String?
+    private let undoEdits: @MainActor @Sendable (any HostServices) async throws -> String?
 
     init(
         connect: @escaping @Sendable () async throws -> any HerdrCoreTransport,

@@ -1,13 +1,12 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Terminals tab's New Terminal sheet (#316): pick a Host and a
 /// Workspace, or a new Workspace at a remote directory, optionally name the
 /// tab, and open a plain shell there. Mirrors New Agent's Workspace choice
 /// without any Agent fields.
 @MainActor
-@Observable
-final class NewTerminalStore {
+final class NewTerminalStore: ObservableObject {
     enum State: Equatable {
         case editing
         case creating
@@ -29,7 +28,7 @@ final class NewTerminalStore {
 
     let hosts: [Host]
 
-    var selectedHostID: Host.ID? {
+    @Published var selectedHostID: Host.ID? {
         didSet {
             guard selectedHostID != oldValue else { return }
             pickedWorkspaceID = nil
@@ -49,14 +48,14 @@ final class NewTerminalStore {
         return available.first?.id
     }
 
-    private(set) var target: Target = .existingWorkspace
-    private(set) var newWorkspaceDirectory = ""
-    var newWorkspaceLabel = ""
-    var tabLabel = ""
-    private(set) var state: State = .editing
+    @Published private(set) var target: Target = .existingWorkspace
+    @Published private(set) var newWorkspaceDirectory = ""
+    @Published var newWorkspaceLabel = ""
+    @Published var tabLabel = ""
+    @Published private(set) var state: State = .editing
 
-    private var pickedWorkspaceID: String?
-    private var isCreating = false
+    @Published private var pickedWorkspaceID: String?
+    @Published private var isCreating = false
     private let workspacesProvider: (Host.ID) -> [ConsoleWorkspace]
     private let directory: (Host.ID, String) -> String?
     private let remoteHome: (Host.ID) async throws -> String

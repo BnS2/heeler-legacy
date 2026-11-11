@@ -6,7 +6,7 @@ import SwiftUI
 struct ChatCandidatePickerView: View {
     static let title = String(localized: "Choose a Conversation")
 
-    let chat: AgentChatStore
+    @ObservedObject var chat: AgentChatStore
     let corePin: TerminalCorePin
 
     @Environment(\.dismiss) private var dismiss
@@ -29,7 +29,7 @@ struct ChatCandidatePickerView: View {
         }
         // Watched from the root: the write that says confirmed also empties the list,
         // which takes the preview off the screen.
-        .onChange(of: chat.pickConfirmation) { _, state in
+        .onChangeCompat(of: chat.pickConfirmation) { _, state in
             if state == .confirmed { dismiss() }
         }
     }
@@ -41,10 +41,10 @@ struct ChatCandidatePickerView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .unavailable(let message):
-            ContentUnavailableView(
+            CompatUnavailableView(
                 "Nothing to Choose From", systemImage: "exclamationmark.bubble", description: Text(message))
         case .listed(let list) where list.candidates.isEmpty:
-            ContentUnavailableView(
+            CompatUnavailableView(
                 "No Conversations Found", systemImage: "bubble.left.and.bubble.right",
                 description: Text("This Agent's directory has no recent conversations, and its process holds none open."))
         case .listed(let list):
@@ -104,7 +104,7 @@ extension ChatSessionCandidate {
 
 /// One candidate's conversation, and the only place it can be chosen.
 private struct ChatCandidatePreviewView: View {
-    let chat: AgentChatStore
+    @ObservedObject var chat: AgentChatStore
     let candidate: ChatSessionCandidate
     let corePin: TerminalCorePin
     let onDone: () -> Void
@@ -118,7 +118,7 @@ private struct ChatCandidatePreviewView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .unreadable(let message):
-                ContentUnavailableView(
+                CompatUnavailableView(
                     "Can't Show This Conversation", systemImage: "exclamationmark.bubble",
                     description: Text(message))
             case .conversation(_, let entries):
@@ -130,7 +130,7 @@ private struct ChatCandidatePreviewView: View {
                     }
                     .padding()
                 }
-                .defaultScrollAnchor(.bottom)
+                .defaultScrollAnchorBottomCompat()
                 .safeAreaInset(edge: .bottom) { confirmation }
             }
         }
@@ -189,7 +189,7 @@ private struct PreviewRow: View {
             Text(message.displayText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(.fill.secondary, in: .rect(cornerRadius: 12, style: .continuous))
+                .background(Color(uiColor: .secondarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .frame(maxWidth: .infinity, alignment: .trailing)
         case .assistant(let message):
             Text(message.text)

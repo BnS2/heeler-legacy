@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Console aggregate: reconciles the Host catalog and publishes one
 /// Agent list with independent Pin and per-Host sidebar ordering. Each ConsoleHostProjection
@@ -12,8 +12,7 @@ struct ConsoleOutcomeNotice: Identifiable, Equatable {
 }
 
 @MainActor
-@Observable
-final class ConsoleStore {
+final class ConsoleStore: ObservableObject {
     struct AgentStatusUpdate: Sendable, Equatable {
         let status: AgentStatus?
         let liveUpdatesAvailable: Bool
@@ -22,86 +21,86 @@ final class ConsoleStore {
         var connectionGeneration: UInt64? = nil
     }
 
-    private(set) var agents: [ConsoleAgent] = []
+    @Published private(set) var agents: [ConsoleAgent] = []
     /// Agents off the list whose program was lost or ended. Only a detail
     /// already open on one reads them, through `detailAgent(for:)`.
-    private(set) var departedAgents: [ConsoleAgent] = []
-    private(set) var terminals: [ConsoleTerminal] = []
+    @Published private(set) var departedAgents: [ConsoleAgent] = []
+    @Published private(set) var terminals: [ConsoleTerminal] = []
     /// See `sceneDidEnd`.
-    @ObservationIgnored private var endedScenes: Set<UUID> = []
+    private var endedScenes: Set<UUID> = []
     private struct AgentViewer {
         let agent: ConsoleAgent.ID
         let scene: UUID?
     }
     /// See `setAgentShown`.
-    @ObservationIgnored private var agentViewers: [UUID: AgentViewer] = [:]
-    private(set) var hostStatuses: [Host.ID: EventsSessionStatus] = [:]
-    private(set) var hostStandingFailures: [Host.ID: TransportError] = [:]
-    private(set) var hostLatencies: [Host.ID: Duration] = [:]
-    private(set) var hostsCheckingConnection: Set<Host.ID> = []
+    private var agentViewers: [UUID: AgentViewer] = [:]
+    @Published private(set) var hostStatuses: [Host.ID: EventsSessionStatus] = [:]
+    @Published private(set) var hostStandingFailures: [Host.ID: TransportError] = [:]
+    @Published private(set) var hostLatencies: [Host.ID: Duration] = [:]
+    @Published private(set) var hostsCheckingConnection: Set<Host.ID> = []
     /// The route each connected Host's current connection reached.
-    private(set) var hostRouteIDs: [Host.ID: HostRoute.ID] = [:]
-    private(set) var hostSyncErrors: [Host.ID: String] = [:]
+    @Published private(set) var hostRouteIDs: [Host.ID: HostRoute.ID] = [:]
+    @Published private(set) var hostSyncErrors: [Host.ID: String] = [:]
     /// Connected core Hosts whose core inherited variables that break things.
-    private(set) var hostCoreEnvironmentNotices: [Host.ID: HerdrCoreEnvironmentNotice] = [:]
+    @Published private(set) var hostCoreEnvironmentNotices: [Host.ID: HerdrCoreEnvironmentNotice] = [:]
     /// Why each core Agent reading Unknown does (ADR 0034). No Herdr TUI Agent is here.
-    private(set) var coreStatusExplanations: [ConsoleAgent.ID: HerdrCoreStatusExplanation] = [:]
+    @Published private(set) var coreStatusExplanations: [ConsoleAgent.ID: HerdrCoreStatusExplanation] = [:]
     /// The harness configuration edits this device applied (ADR 0033).
     let harnessEdits: HarnessConfigEditStore
     private let hostHelperBundle: @Sendable () throws -> HostHelperBundle
-    private(set) var hostConnectionGenerations: [Host.ID: UInt64] = [:]
+    @Published private(set) var hostConnectionGenerations: [Host.ID: UInt64] = [:]
     /// Hosts whose current connection has not produced its first snapshot.
     /// Their empty Agent projection is loading state, not proof that a pane
     /// disappeared.
-    private(set) var hostsAwaitingSnapshot: Set<Host.ID> = []
+    @Published private(set) var hostsAwaitingSnapshot: Set<Host.ID> = []
     /// Hosts whose inventory predates their current connection, including one
     /// replaced silently. Their rows stay listed, but input waits.
-    private(set) var hostsAwaitingFreshSnapshot: Set<Host.ID> = []
+    @Published private(set) var hostsAwaitingFreshSnapshot: Set<Host.ID> = []
     /// Latest snapshot workspaces by Host. This is observable state rather
     /// than a projection lookup so an open New Agent picker refreshes when a
     /// snapshot arrives or a workspace membership event resyncs the Host.
-    private(set) var workspacesByHost: [Host.ID: [ConsoleWorkspace]] = [:]
+    @Published private(set) var workspacesByHost: [Host.ID: [ConsoleWorkspace]] = [:]
     /// Successful or snapshot-reconciled removals keyed by the exact Agents
     /// that belonged to the validated worktree. This survives their rows
     /// disappearing so Agent detail can show a stable result.
     /// Outcomes whose screen had gone by the time they came. Off the Console's
     /// projections on purpose: a reconnect that clears an inventory leaves these.
-    private(set) var outcomeNotices: [ConsoleOutcomeNotice] = []
-    private(set) var removedWorktreesByAgent: [
+    @Published private(set) var outcomeNotices: [ConsoleOutcomeNotice] = []
+    @Published private(set) var removedWorktreesByAgent: [
         ConsoleAgent.ID: WorktreeRemovalReceipt
     ] = [:]
     /// Each Host's platform as its connection reported it; a core Host's Chat and
     /// uploads wait for it, and what they offer then follows `HostCapabilities`. Kept
     /// across reconnects of one catalog entry, so a reconnect does not take an
     /// open Chat away, and asked again on each new connection.
-    private(set) var hostPlatforms: [Host.ID: HostPlatform] = [:]
+    @Published private(set) var hostPlatforms: [Host.ID: HostPlatform] = [:]
     /// What each core Host's desktop app can name right now.
-    private(set) var hostDesktopAppNaming: [Host.ID: HerdrAppNaming] = [:]
+    @Published private(set) var hostDesktopAppNaming: [Host.ID: HerdrAppNaming] = [:]
     /// Each core Host's kernel, as its locator prints it, once a link has located its core.
-    private(set) var hostCoreKernels: [Host.ID: String] = [:]
+    @Published private(set) var hostCoreKernels: [Host.ID: String] = [:]
     /// The core each core Host's inventory comes from. A detail reads it, so it
     /// redraws once the Host no longer serves the core it opened on.
-    private(set) var hostCores: [Host.ID: String] = [:]
+    @Published private(set) var hostCores: [Host.ID: String] = [:]
     /// The connection each Host's platform was last asked on.
-    @ObservationIgnored private var hostPlatformGenerations: [Host.ID: UInt64] = [:]
+    private var hostPlatformGenerations: [Host.ID: UInt64] = [:]
 
-    @ObservationIgnored private var projections: [
+    private var projections: [
         Host.ID: any ConsoleHostProjection
     ] = [:]
     /// Skills probed per Host connection: keyed on the connection generation
     /// so a reconnect naturally invalidates, and evicted per Host on insert
     /// so stale generations cannot accumulate.
-    @ObservationIgnored private var skillsCache: [SkillsCacheKey: [AgentSkill]] = [:]
+    private var skillsCache: [SkillsCacheKey: [AgentSkill]] = [:]
     /// Status events already converge through each Host's one pane-scoped
     /// subscription. Composers consume this fan-out instead of opening a
     /// second events channel that could outlive the connection snapshot.
-    @ObservationIgnored private var agentStatusObservers: [
+    private var agentStatusObservers: [
         ConsoleAgent.ID: [UUID: AsyncStream<AgentStatusUpdate>.Continuation]
     ] = [:]
-    @ObservationIgnored private var gitExecGates: [Host.ID: GitExecGate] = [:]
+    private var gitExecGates: [Host.ID: GitExecGate] = [:]
     /// The Agents list's Changes totals, one store per Agent, shared by
     /// every window's rows and by nothing else.
-    @ObservationIgnored private(set) lazy var rowChanges = AgentRowChanges { [unowned self] agent in
+    private(set) lazy var rowChanges = AgentRowChanges { [unowned self] agent in
         let store = makeChangesStore(
             agentID: agent.id, hostID: agent.hostID, openingDirectory: agent.directory)
         store.onLoaded = { [weak self] changes in
@@ -115,7 +114,7 @@ final class ConsoleStore {
     /// Composer ownership sits above the detail branch so a failed Host's
     /// missing-Agent placeholder cannot destroy a draft, and
     /// no view's lifetime decides an upload's.
-    @ObservationIgnored private var composerSessions: [
+    private var composerSessions: [
         ConsoleAgent.ID: AgentComposerSession
     ] = [:]
     /// The shell tab this app created per Workspace, so Open Terminal
@@ -123,7 +122,7 @@ final class ConsoleStore {
     /// In-memory on purpose: tabs die with the herdr server, and reuse
     /// verifies liveness before attaching, so persistence would only add
     /// stale state. Deliberately kept across reconnects — tabs survive them.
-    @ObservationIgnored private var shellTerminals: [
+    private var shellTerminals: [
         ShellTerminalKey: ShellTerminalIdentity
     ] = [:]
 
@@ -131,29 +130,29 @@ final class ConsoleStore {
         let hostID: Host.ID
         let workspaceID: String
     }
-    @ObservationIgnored private let makeSession:
+    private let makeSession:
         @Sendable (Host, [EventSubscription]) -> EventsSession
-    @ObservationIgnored private let makeCoreSession: @Sendable (Host) -> HerdrCoreHostSession
-    @ObservationIgnored private let herdrAppRename: Bool
-    @ObservationIgnored private let coreSendClock: BlockedCardClock
-    @ObservationIgnored private let coreHostMemory: HerdrCoreHostMemory
-    @ObservationIgnored private let coreStopClock: BlockedCardClock
-    @ObservationIgnored private let coreLinuxChatPrograms: Set<ChatProgram>
-    @ObservationIgnored private let coreMacOSChatPrograms: Set<ChatProgram>
-    @ObservationIgnored private let chatTiming: AgentChatStore.Timing
-    @ObservationIgnored private let chatNow: @Sendable () -> Date
-    @ObservationIgnored private let coreWindowsChatPrograms: Set<ChatProgram>
+    private let makeCoreSession: @Sendable (Host) -> HerdrCoreHostSession
+    private let herdrAppRename: Bool
+    private let coreSendClock: BlockedCardClock
+    private let coreHostMemory: HerdrCoreHostMemory
+    private let coreStopClock: BlockedCardClock
+    private let coreLinuxChatPrograms: Set<ChatProgram>
+    private let coreMacOSChatPrograms: Set<ChatProgram>
+    private let chatTiming: AgentChatStore.Timing
+    private let chatNow: @Sendable () -> Date
+    private let coreWindowsChatPrograms: Set<ChatProgram>
     /// A core Host's connection for the files rooted at its Host Helper, dialed
     /// for each use and apart from the session its projection holds.
-    @ObservationIgnored private let connectCore: @Sendable (Host) async throws -> any HerdrCoreTransport
-    @ObservationIgnored private let snapshotRetryDelay: Duration
-    @ObservationIgnored private let chatPrefetchRetryDelay: Duration
-    @ObservationIgnored private var isActive = false
+    private let connectCore: @Sendable (Host) async throws -> any HerdrCoreTransport
+    private let snapshotRetryDelay: Duration
+    private let chatPrefetchRetryDelay: Duration
+    private var isActive = false
     /// The most recently enqueued lifecycle transition. Suspend and resume
     /// are each several awaits long, so without a chain a resume racing a
     /// suspend can finish first and leave every Host suspended with nothing
     /// left to re-activate it.
-    @ObservationIgnored private var lifecycleTask: Task<Void, Never>?
+    private var lifecycleTask: Task<Void, Never>?
     /// Shared with the Console list: a pin toggle must re-sort `agents` in
     /// the same turn, so the store lives here rather than only on the view.
     let pins: PinnedAgentsStore
@@ -162,49 +161,49 @@ final class ConsoleStore {
     let pluginStatuses = HeelerPluginStatusStore()
     /// Made on demand while a view reads them, so not observed: each store
     /// is observable itself.
-    @ObservationIgnored private var agentUsageStores: [Host.ID: AgentUsageStore] = [:]
+    private var agentUsageStores: [Host.ID: AgentUsageStore] = [:]
     /// Hosts that share a plugin config directory share its Account file,
     /// so every Host's Account changes take turns.
-    @ObservationIgnored private let usageAccountFileGate = GitExecGate()
+    private let usageAccountFileGate = GitExecGate()
     /// Hears what this device has seen on a core Host, for its Host Helper.
-    @ObservationIgnored var onCoreSeenMarksChanged:
+    var onCoreSeenMarksChanged:
         (@MainActor (Host.ID, String, [String: HerdrCoreTurnState.Mark]) -> Void)?
-    @ObservationIgnored private var hostAccountsStores: [Host.ID: HostAccountsStore] = [:]
+    private var hostAccountsStores: [Host.ID: HostAccountsStore] = [:]
     /// The device's Launch Presets (#622).
     let launchPresets = LaunchPresetStore()
     /// Writes the widgets' snapshot of those readings. Only the app passes
     /// one: demo mode and tests must not replace the real widgets' figures.
-    @ObservationIgnored let usageWidgets: AgentUsageWidgetPublisher?
-    @ObservationIgnored private let usageSettings: AgentUsageSettings
+    let usageWidgets: AgentUsageWidgetPublisher?
+    private let usageSettings: AgentUsageSettings
     /// Reads made only because a widget's figures went stale, per Host.
-    @ObservationIgnored private var widgetUsageRefreshes: [Host.ID: (id: UUID, task: Task<Void, Never>)] = [:]
+    private var widgetUsageRefreshes: [Host.ID: (id: UUID, task: Task<Void, Never>)] = [:]
     /// The catalog in its order, which the widgets' snapshot keeps.
-    @ObservationIgnored private var catalog: [Host] = []
+    private var catalog: [Host] = []
     let terminalConnections: TerminalConnectionPool
     let agentTerminals: AgentTerminalCache
     /// Chat's saved conversations. Volatile unless the app passes the file
     /// cache: demo mode and tests build Console stores in the app's own
     /// container, and their `setHosts` would otherwise clear the real one.
-    @ObservationIgnored let chatCache: any ChatTranscriptCache
+    let chatCache: any ChatTranscriptCache
     let cachedChats: ConsoleChatCache
-    @ObservationIgnored private var chatPrefetchTasks: [Host.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var chatPrefetched: [ConsoleAgent.ID: String] = [:]
+    private var chatPrefetchTasks: [Host.ID: Task<Void, Never>] = [:]
+    private var chatPrefetched: [ConsoleAgent.ID: String] = [:]
     /// Prefetches that found no conversation yet, by the key they ran for.
-    @ObservationIgnored private var chatPrefetchRetries: [ConsoleAgent.ID: (key: String, count: Int)] = [:]
+    private var chatPrefetchRetries: [ConsoleAgent.ID: (key: String, count: Int)] = [:]
     /// The connection whose saved Chat bindings were last re-proved, per Host.
-    @ObservationIgnored private var chatCacheValidatedGenerations: [Host.ID: UInt64] = [:]
-    @ObservationIgnored private var chatCacheRetention: Task<Void, Never>?
+    private var chatCacheValidatedGenerations: [Host.ID: UInt64] = [:]
+    private var chatCacheRetention: Task<Void, Never>?
     /// How Chat reads each program's transcripts; nil leaves the program
     /// without Chat: not offered, not prefetched, and no reason to ask for
     /// its Host's platform.
-    @ObservationIgnored private let chatAdapter: @Sendable (ChatProgram) -> ChatTranscriptAdapter?
+    private let chatAdapter: @Sendable (ChatProgram) -> ChatTranscriptAdapter?
     /// One Chat per Agent whose detail has shown it, kept like the Composer
     /// so leaving and returning keeps the conversation and its position.
-    @ObservationIgnored private var chatStores: [ConsoleAgent.ID: AgentChatStore] = [:]
+    private var chatStores: [ConsoleAgent.ID: AgentChatStore] = [:]
     /// The last session event each core Agent's Chat has heard of.
-    @ObservationIgnored private var chatSessionEventRevisions: [ConsoleAgent.ID: UInt64] = [:]
-    @ObservationIgnored private var terminalSnapshotRevisions: [Host.ID: UInt64] = [:]
-    @ObservationIgnored private var terminalTransportGenerations: [Host.ID: UInt64] = [:]
+    private var chatSessionEventRevisions: [ConsoleAgent.ID: UInt64] = [:]
+    private var terminalSnapshotRevisions: [Host.ID: UInt64] = [:]
+    private var terminalTransportGenerations: [Host.ID: UInt64] = [:]
 
     init(
         snapshotRetryDelay: Duration = .seconds(2),
@@ -1368,7 +1367,7 @@ final class ConsoleStore {
         Set(agentViewers.values.lazy.filter { $0.agent.hostID == hostID }.map(\.agent.paneID))
     }
 
-    private var titleRenamesInFlight: Set<ConsoleAgent.ID> = []
+    @Published private var titleRenamesInFlight: Set<ConsoleAgent.ID> = []
 
     private func requireNoTitleRename(_ id: ConsoleAgent.ID) throws {
         guard !titleRenamesInFlight.contains(id) else {

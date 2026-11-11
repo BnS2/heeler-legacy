@@ -66,10 +66,10 @@
         @State private var liveActivities: HostLiveActivityCoordinator
         @State private var activity: AppActivityCoordinator
         @State private var hostRemoval: HostRemovalDependencies
-        @State private var diffLayout = DiffLayoutSettings(defaults: DemoScreenshotFixture.makeDefaults(), offersSideBySide: UIDevice.current.userInterfaceIdiom == .pad)
+        @StateObject private var diffLayout = DiffLayoutSettings(defaults: DemoScreenshotFixture.makeDefaults(), offersSideBySide: UIDevice.current.userInterfaceIdiom == .pad)
         /// Off, with process-local settings: the mic shows as in the app, and
         /// nothing reaches the Keychain or a speech service.
-        @State private var voiceInput = VoiceInputSession(
+        @StateObject private var voiceInput = VoiceInputSession(
             settings: VoiceInputSettings(
                 defaults: DemoScreenshotFixture.makeDefaults(), secrets: VolatileSecretStore()))
 
@@ -120,7 +120,8 @@
             .environment(\.diffLayoutSettings, diffLayout)
             .environment(\.hostOnboardingDependencies, DemoScreenshotFixture.onboardingDependencies)
             .environment(\.hostRemovalDependencies, hostRemoval)
-            .environment(voiceInput)
+            .environmentObject(voiceInput)
+            .environment(\.voiceInputSession, voiceInput)
             .task {
                 console.setHosts(hosts.hosts)
                 notificationPreferences.setHosts(hosts.hosts)
@@ -137,22 +138,22 @@
 
     @MainActor
     struct DemoScreenshotComposition {
-        let hosts: HostStore
-        let console: ConsoleStore
-        let terminalThemes: TerminalThemeSettings
-        let terminalZoom: TerminalZoomSettings
-        let terminalFonts: TerminalFontSettings
-        let snippets: SnippetStore
-        let appearance: AppAppearanceSettings
-        let inputMode: AgentInputModeSettings
-        let detailSurface: AgentDetailSurfaceSettings
-        let pushRegistration: PushRegistrationStore
-        let notificationPreferences: NotificationPreferencesStore
-        let relaySettings: NotificationRelaySettings
-        let notificationRouter: AgentNotificationRouter
-        let bannerStore: AgentNotificationBannerStore
-        let liveActivities: HostLiveActivityCoordinator
-        let activity: AppActivityCoordinator
+        @ObservedObject var hosts: HostStore
+        @ObservedObject var console: ConsoleStore
+        @ObservedObject var terminalThemes: TerminalThemeSettings
+        @ObservedObject var terminalZoom: TerminalZoomSettings
+        @ObservedObject var terminalFonts: TerminalFontSettings
+        @ObservedObject var snippets: SnippetStore
+        @ObservedObject var appearance: AppAppearanceSettings
+        @ObservedObject var inputMode: AgentInputModeSettings
+        @ObservedObject var detailSurface: AgentDetailSurfaceSettings
+        @ObservedObject var pushRegistration: PushRegistrationStore
+        @ObservedObject var notificationPreferences: NotificationPreferencesStore
+        @ObservedObject var relaySettings: NotificationRelaySettings
+        @ObservedObject var notificationRouter: AgentNotificationRouter
+        @ObservedObject var bannerStore: AgentNotificationBannerStore
+        @ObservedObject var liveActivities: HostLiveActivityCoordinator
+        @ObservedObject var activity: AppActivityCoordinator
         /// The app's removal over the demo stores: its Notification Keys are
         /// volatile, so removing a demo Host never touches the Keychain.
         let hostRemoval: HostRemovalDependencies
@@ -182,7 +183,7 @@
             }
             let hosts = HostStore(volatileHosts: DemoScreenshotFixture.hosts)
             let liveActivities = HostLiveActivityCoordinator(
-                controller: ActivityKitLiveActivityController(),
+                controller: makeLiveActivityController(),
                 preferences: liveActivityPreferences,
                 transports: console,
                 deviceToken: { nil },

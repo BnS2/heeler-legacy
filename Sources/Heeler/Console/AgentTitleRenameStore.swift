@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Native conversation titles, separate from herdr's restricted Agent aliases.
 enum AgentTitleNaming {
@@ -82,8 +82,7 @@ struct AgentTitleRenameError: LocalizedError {
 }
 
 @MainActor
-@Observable
-final class AgentTitleRenameStore: Identifiable {
+final class AgentTitleRenameStore: ObservableObject, Identifiable {
     let id = UUID()
     enum State: Equatable {
         case editing, saving, generating, renamed
@@ -91,13 +90,13 @@ final class AgentTitleRenameStore: Identifiable {
     }
 
     let program: ChatProgram
-    var input: String
-    private(set) var state: State = .editing
+    @Published var input: String
+    @Published private(set) var state: State = .editing
     private let expected: Agent
     private let io: AgentTitleRenameIO
     /// A timeout or interrupted write requires reopening and checking the terminal.
-    private(set) var outcomeUncertain = false
-    private var dispatched = false
+    @Published private(set) var outcomeUncertain = false
+    @Published private var dispatched = false
 
     init(agent: Agent, program: ChatProgram, io: AgentTitleRenameIO) {
         expected = agent

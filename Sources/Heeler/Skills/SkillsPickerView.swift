@@ -6,7 +6,7 @@ import SwiftUI
 /// search field the keyboard pane cannot host. Tapping a Skill inserts its
 /// invocation into the draft without sending it, then closes the picker.
 struct SkillsPickerView: View {
-    let store: SkillsPaneStore
+    @ObservedObject var store: SkillsPaneStore
     let onInsert: (AgentSkill) -> Void
     /// Fetches the skill's full document for View Content. The picker owns
     /// that sheet itself: the screen's own skill sheet cannot present while
@@ -54,7 +54,7 @@ struct SkillsPickerView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("Skills Unavailable", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(message)
@@ -63,7 +63,7 @@ struct SkillsPickerView: View {
                     .buttonStyle(.borderedProminent)
             }
         case .loaded:
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Skills", systemImage: "sparkles")
             } description: {
                 Text("No skills found for this agent.")
@@ -77,7 +77,7 @@ struct SkillsPickerView: View {
     private var resultsList: some View {
         let results = store.matching(query)
         if results.isEmpty {
-            ContentUnavailableView.search(text: query)
+            CompatUnavailableView("No Results", systemImage: "magnifyingglass", description: Text("No results for \"\(query)\"."))
         } else {
             List {
                 section(titled: String(localized: "Project"), skills: results.filter { $0.scope == .project })
@@ -106,7 +106,7 @@ struct SkillsPickerView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(skill.command)
                     .font(.body.weight(.medium))
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 if let description = skill.description {

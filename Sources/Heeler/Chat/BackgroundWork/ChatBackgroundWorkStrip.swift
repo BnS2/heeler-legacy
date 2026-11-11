@@ -148,7 +148,7 @@ private struct ChatBackgroundWorkRowLabel: View {
         Text(verbatim: row.title)
             .font(.subheadline)
             // A Workflow's name is an identifier, as a command is.
-            .fontDesign(row.kind == .workflow ? .monospaced : nil)
+            .fontDesignCompat(row.kind == .workflow ? .monospaced : nil)
             .foregroundStyle(row.status == .completed || row.status == .stopped ? .secondary : .primary)
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
     }

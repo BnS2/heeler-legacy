@@ -5,6 +5,11 @@ All notable changes to Heeler are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Entries reference the pull request that made the change.
 
+## Heeler Legacy (Unreleased)
+
+- Run the app on iOS 16 with SwiftUI and observation compatibility fallbacks.
+  Widgets and test bundles retain an iOS 18 minimum.
+
 ## [Unreleased]
 
 ### Added

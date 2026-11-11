@@ -7,7 +7,7 @@ import SwiftUI
 struct QuestionFormCard: View {
     let card: BlockedCard
     let form: QuestionForm
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     let maxHeight: CGFloat
     @State private var page = 0
     /// A single-select question's option, by question.

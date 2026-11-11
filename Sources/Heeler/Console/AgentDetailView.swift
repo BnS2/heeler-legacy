@@ -470,7 +470,7 @@ struct AgentDetailView: View {
         }
         // Pushed as Hosts pushes a Host, so Back and the swipe are the
         // system's own; either one closes the presentation.
-        .navigationDestination(item: changesRoute) { route in
+        .navigationDestinationCompat(item: changesRoute) { route in
             ChangesView(store: route.store)
                 .environment(\.changesScreenPresence, changesScreenPresence)
                 // A diff opened from Chat looks like Chat.
@@ -480,7 +480,7 @@ struct AgentDetailView: View {
         }
         // Open Terminal on an iPhone: a short detour, so Back and the swipe
         // come back to this Agent rather than to the list.
-        .navigationDestination(item: shellRouteSelection) { route in
+        .navigationDestinationCompat(item: shellRouteSelection) { route in
             pushedTerminal(route)
         }
         .onAppear {
@@ -492,7 +492,7 @@ struct AgentDetailView: View {
             prepareRetainedAgent()
             updateFocus()
         }
-        .onChange(of: focusViewingState) {
+        .onChangeCompat(of: focusViewingState) { _, _ in
             updateFocus()
         }
         .onDisappear {
@@ -509,11 +509,11 @@ struct AgentDetailView: View {
                 session.detailDidDisappear(key)
             }
         }
-        .onChange(of: console.hostConnectionGenerations[agent.hostID]) { _, generation in
+        .onChangeCompat(of: console.hostConnectionGenerations[agent.hostID]) { _, generation in
             prepareRetainedAgent()
             openTerminal.transportGenerationDidChange(generation)
         }
-        .onChange(of: activity.activationCount) { prepareRetainedAgent() }
+        .onChangeCompat(of: activity.activationCount) { _, _ in prepareRetainedAgent() }
         .confirmationDialog("Open Terminal", isPresented: $isChoosingTerminal, titleVisibility: .visible) {
             ForEach(workspaceShells) { @Sendable target in
                 Button(target.displayTitle + " · " + (target.tabLabel ?? String(localized: "Terminal"))) {
@@ -539,12 +539,12 @@ struct AgentDetailView: View {
         // the one that gains it rejoins behind that release through the
         // Host's terminal serialization. A Shell Terminal in this window
         // keeps the channel, so neither applies while one is open.
-        .onChange(of: terminalAccess, initial: true) {
+        .onChangeCompat(of: terminalAccess, initial: true) { _, _ in
             applyTerminalAccess()
         }
         // Back from Changes: the terminal left as it does for the Agent list,
         // so it comes back the same way, through retention and rejoin.
-        .onChange(of: changes.store == nil) { _, showsTerminal in
+        .onChangeCompat(of: changes.store == nil) { _, showsTerminal in
             onShowsChanges?(!showsTerminal)
             if showsTerminal {
                 applyTerminalAccess()
@@ -561,7 +561,7 @@ struct AgentDetailView: View {
         // Availability can move the surface too: Chat appears once the
         // Host's platform is known, and goes when the Agent stops being one
         // Chat can read.
-        .onChange(of: effectiveSurface, initial: true) { previous, current in
+        .onChangeCompat(of: effectiveSurface, initial: true) { previous, current in
             attachReference.showsChat = current == .chat
             sceneRouting?.chatSurfaceDidChange(agent: current == .chat ? agent.id : nil)
             onShowsChat?(current == .chat && shellRoute == nil)
@@ -570,24 +570,24 @@ struct AgentDetailView: View {
         // Back from a pushed Shell Terminal: the Agent's surface comes back
         // as it does from Changes. The terminal's chrome is the window's
         // while it stands over Chat.
-        .onChange(of: shellRoute == nil) { _, showsAgent in
+        .onChangeCompat(of: shellRoute == nil) { _, showsAgent in
             onShowsChat?(effectiveSurface == .chat && showsAgent)
             sceneRouting?.agentCoverDidChange(agent: showsAgent ? nil : agent.id)
             if showsAgent { applyTerminalAccess() }
         }
         // A notification for this Agent, tapped while its Shell Terminal is
         // pushed, lands on the Agent rather than leaving the shell up.
-        .onChange(of: repeatLandings) {
+        .onChangeCompat(of: repeatLandings) { _, _ in
             shellRoute = nil
         }
         // A window widened beside its list: the list selects the terminal
         // pushed while the detail stood alone.
-        .onChange(of: isPushedOverList, initial: true) { _, pushedOverList in
+        .onChangeCompat(of: isPushedOverList, initial: true) { _, pushedOverList in
             guard !pushedOverList, let route = shellRoute else { return }
             shellRoute = nil
             onSelectTerminal?(route.terminal)
         }
-        .onChange(of: openTerminal.shell != nil || openTerminal.isOpening, initial: true) {
+        .onChangeCompat(of: openTerminal.shell != nil || openTerminal.isOpening, initial: true) {
             _, showsShellTerminal in
             sceneRouting?.shellTerminalDidChange(agent: showsShellTerminal ? agent.id : nil)
             // Access that changed while a Shell Terminal was opening applies
@@ -797,7 +797,7 @@ private final class AgentDetailRetentionHolder {}
 
 @MainActor
 private final class AgentDetailAttachReference {
-    var store: AgentAttachStore
+    @ObservedObject var store: AgentAttachStore
     /// Chat shows in the terminal's place; read by the Shell Terminal
     /// return, which must not rejoin an Attach nothing shows.
     var showsChat = false

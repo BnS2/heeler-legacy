@@ -2,7 +2,6 @@ import CLibSSH2
 import CHeelerSSHSupport
 import Darwin
 import Foundation
-import Synchronization
 
 #if DEBUG
 enum HandshakeFailureObservation {

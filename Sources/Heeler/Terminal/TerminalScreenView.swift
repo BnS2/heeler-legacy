@@ -1,5 +1,4 @@
 import GhosttyTerminal
-import Observation
 import SwiftUI
 import UIKit
 
@@ -34,8 +33,7 @@ struct TerminalClipboard {
 /// dead one. First-responder state is observable so Direct Input chrome can
 /// refresh without waiting on an unrelated SwiftUI invalidation.
 @MainActor
-@Observable
-final class TerminalKeyboardControl {
+final class TerminalKeyboardControl: ObservableObject {
     weak var terminal: HeelerTerminalView? {
         didSet {
             oldValue?.onFirstResponderChange = nil
@@ -52,7 +50,7 @@ final class TerminalKeyboardControl {
 
     /// Ghostty first-responder intent. Distinct from software-keyboard inset:
     /// a hardware keyboard can keep this true with a zero footprint.
-    private(set) var isFirstResponder = false
+    @Published private(set) var isFirstResponder = false
 
     var isKeyboardUp: Bool { isFirstResponder }
 
@@ -78,7 +76,7 @@ final class TerminalKeyboardControl {
     /// on-screen `sendQuickKey` or the next physical press / `insertText`.
     /// Firing any mapped key consumes and clears it; tapping the armed
     /// modifier again disarms it. No lock mode.
-    private(set) var pendingModifiers = TerminalKeyModifiers()
+    @Published private(set) var pendingModifiers = TerminalKeyModifiers()
 
     func isModifierArmed(_ modifier: TerminalKeyModifiers) -> Bool {
         pendingModifiers.contains(modifier)
@@ -750,7 +748,7 @@ final class HeelerTerminalView: UITerminalView, TerminalByteSink {
     var onFontSizeChanged: ((Float) -> Void)?
     var onOpenLink: ((URL) -> Void)?
     /// The cell's size in device pixels changed.
-    var onCellPixelsChange: ((_ width: Int, _ height: Int) -> Void)? {
+    @Published var onCellPixelsChange: ((_ width: Int, _ height: Int) -> Void)? {
         didSet { reportCellPixels() }
     }
     private var cellPixels: (width: Int, height: Int)?

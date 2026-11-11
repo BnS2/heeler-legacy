@@ -17,10 +17,10 @@ import UIKit
 /// Nothing rides the keyboard itself, so switching modes cannot tear the row
 /// down, and the IME's composition survives a round trip through Keys.
 struct ShellTerminalView: View {
-    let store: ShellTerminalStore
+    @ObservedObject var store: ShellTerminalStore
     let agentID: ConsoleAgent.ID
     let terminal: TerminalSettings
-    let activity: AppActivityCoordinator
+    @ObservedObject var activity: AppActivityCoordinator
     let isReturning: Bool
     /// Nil hides the Close Terminal action entirely (previews, tests).
     var isClosingTerminal: Bool = false
@@ -44,16 +44,16 @@ struct ShellTerminalView: View {
     var backReturnsToAgent = true
     let onBack: @MainActor () async -> Void
 
-    @State private var keyboardControl = TerminalKeyboardControl()
+    @StateObject private var keyboardControl = TerminalKeyboardControl()
     @State private var keyboardMode: TerminalKeyboardMode = .text
-    @State private var keyboardInset = TerminalKeyboardInset()
+    @StateObject private var keyboardInset = TerminalKeyboardInset()
     @State private var isConfirmingClose = false
     @Environment(\.themeAppearance) private var themeAppearance
     /// The scene root's window, known before this screen first renders.
     @Environment(\.sceneWindow) private var sceneWindow
     @Environment(\.detailCrossfade) private var detailCrossfade
     /// This view's own window, for hosts without a scene root.
-    @State private var mountedWindow = WindowReference()
+    @StateObject private var mountedWindow = WindowReference()
     @Environment(\.detailTopChromeInset) private var topChromeInset
     @Environment(\.detailBarRow) private var barRow
     @Environment(\.detailSurfaceEdges) private var surfaceEdges
@@ -339,7 +339,7 @@ struct ShellTerminalView: View {
                         .chromeColorScheme(for: themeAppearance))
                 .padding(.horizontal, 12)
                 .padding(.top, backHeaderTop)
-                .onChange(of: isBackHeaderExpanded) { _, expanded in
+                .onChangeCompat(of: isBackHeaderExpanded) { _, expanded in
                     if !expanded { isHeaderDrawerOpen = false }
                 }
             }
@@ -414,7 +414,7 @@ struct ShellTerminalView: View {
                 agentID: agentID,
                 isPresenting: isConfirmingClose || store.pendingPaste != nil
                     || store.pasteErrorMessage != nil))
-            .onChange(of: activity.activationCount, initial: true) { _, _ in
+            .onChangeCompat(of: activity.activationCount, initial: true) { _, _ in
                 store.didBecomeActive(
                     afterPossibleSuspension: activity.lastAbsenceMayHaveSuspended)
             }
@@ -422,12 +422,12 @@ struct ShellTerminalView: View {
             // decides the keyboard itself from the user's last intent (see
             // `claimsKeyboard`); app-side mode state has to follow it back to
             // Text without raising anything on its own.
-            .onChange(of: store.terminalID) { _, _ in
+            .onChangeCompat(of: store.terminalID) { _, _ in
                 setKeyboardMode(.text, restoresSystemKeyboard: false)
             }
             // On iPad the Keys dock stands without a responder, so a tap on
             // the terminal's input row asks for the system keyboard.
-            .onChange(of: keyboardControl.isFirstResponder) { _, isUp in
+            .onChangeCompat(of: keyboardControl.isFirstResponder) { _, isUp in
                 guard isUp, keyboardMode == .controls,
                       TerminalKeyboardMode.controlsReleaseFirstResponder
                 else { return }
@@ -858,7 +858,7 @@ struct ShellTerminalInputRow: View {
 struct ShellTerminalKeysDock: View {
     let settings: TerminalSettings
     let height: CGFloat
-    let control: TerminalKeyboardControl
+    @ObservedObject var control: TerminalKeyboardControl
     @State private var selectedTab: TerminalKeysTab = .controls
 
     static let tabs: [TerminalKeysTab] = [.controls, .appearance]

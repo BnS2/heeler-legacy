@@ -8,7 +8,7 @@ struct HostOnboardingView: View {
     /// changes (see `adopt`).
     let host: Host
     /// The Host catalog, for the Edit sheet.
-    let catalog: HostStore
+    @ObservedObject var catalog: HostStore
     let usage: AgentUsageStore?
     /// Shows this Host on the Usage tab; nil where the Host detail stands
     /// outside the Console.
@@ -50,7 +50,7 @@ struct HostOnboardingView: View {
     @State private var isShowingHostHelper = false
     /// Asked for by whoever opened this page, until the Helper sheet first shows.
     @State private var opensHostHelperOnArrival: Bool
-    @Environment(OverlayNetworkStore.self) private var overlayNetworks: OverlayNetworkStore?
+    @Environment(\.overlayNetworkStore) private var overlayNetworks
 
     init(
         host: Host,
@@ -105,13 +105,13 @@ struct HostOnboardingView: View {
             .sheet(isPresented: $isEditing, onDismiss: { isEditorOnScreen = false }) {
                 HostFormView(store: catalog, editing: store.host)
             }
-            .onChange(of: host) { _, updated in
+            .onChangeCompat(of: host) { _, updated in
                 if !isEditorOnScreen { adopt(updated) }
             }
-            .onChange(of: isEditorOnScreen) { _, isOnScreen in
+            .onChangeCompat(of: isEditorOnScreen) { _, isOnScreen in
                 if !isOnScreen { adopt(host) }
             }
-            .onChange(of: store.phase) { _, phase in
+            .onChangeCompat(of: store.phase) { _, phase in
                 guard phase == .finished, offersHostKeyReplacement else { return }
                 offersHostKeyReplacement = false
                 isConfirmingHostKeyReplacement = store.pendingHostKeyReplacement != nil
@@ -252,10 +252,10 @@ struct HostOnboardingView: View {
                 await store.runChecks()
             }
         }
-        .onChange(of: store.report) { _, report in
+        .onChangeCompat(of: store.report) { _, report in
             isConsoleRecoveryArmed = report == .allPassed
         }
-        .onChange(of: consoleRecoveryInput) { _, input in
+        .onChangeCompat(of: consoleRecoveryInput) { _, input in
             switch HostOnboardingConsoleRecovery.action(for: input) {
             case .wait:
                 break
@@ -266,13 +266,13 @@ struct HostOnboardingView: View {
                 retry()
             }
         }
-        .onChange(of: store.coreStart) { _, coreStart in
+        .onChangeCompat(of: store.coreStart) { _, coreStart in
             let action = HostOnboardingCoreFollow.action(
                 afterCoreStart: coreStart, reportPassed: store.report == .allPassed, status: connectionStatus)
             if action == .wakeConsole { retry() }
         }
         // The reading, not the status: every backoff would otherwise count.
-        .onChange(of: HostOnboardingCoreFollow.reading(connectionStatus)) { _, reading in
+        .onChangeCompat(of: HostOnboardingCoreFollow.reading(connectionStatus)) { _, reading in
             let action = HostOnboardingCoreFollow.action(
                 afterConsoleReads: reading, serverKind: store.host.serverKind, phase: store.phase,
                 coreStart: store.coreStart, reportPassed: store.report == .allPassed,
@@ -1257,7 +1257,7 @@ private struct HostHelperOnArrival: ViewModifier {
     @Binding var isShowing: Bool
 
     func body(content: Content) -> some View {
-        content.onChange(of: isReady, initial: true) { _, isReady in
+        content.onChangeCompat(of: isReady, initial: true) { _, isReady in
             guard isReady, isRequested else { return }
             isRequested = false
             isShowing = true

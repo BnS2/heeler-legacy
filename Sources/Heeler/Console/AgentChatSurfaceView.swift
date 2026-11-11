@@ -33,7 +33,7 @@ struct AgentChatSurfaceView: View {
     /// Swaps the detail back to the Agent terminal.
     private let selectSurface: (AgentDetailSurface) -> Void
 
-    @State private var timeline = ChatTimelineModel()
+    @StateObject private var timeline = ChatTimelineModel()
     @State private var skillsStore: SkillsPaneStore?
     @State private var closer: ClosePaneStore
     /// This view's token with the Chat store, which follows the
@@ -93,7 +93,7 @@ struct AgentChatSurfaceView: View {
     /// The row the Background Work sheet opened from.
     @State private var backgroundWorkFocus: String?
     /// This view's own window, for hosts without a scene root.
-    @State private var mountedWindow = WindowReference()
+    @StateObject private var mountedWindow = WindowReference()
     @State private var windowControlsHeight: CGFloat = 0
     @State private var checkAgain: ChatCheckAgainHold?
     /// Shared with the terminal: one reading preference across surfaces.
@@ -363,7 +363,7 @@ struct AgentChatSurfaceView: View {
                 answerSwitch(false)
             }
         }
-        .onChange(of: timelineFeed, initial: true) { _, feed in
+        .onChangeCompat(of: timelineFeed, initial: true) { _, feed in
             let transcript = chat?.conversation.transcript
             let entries = feed.history.marking(transcript?.entries ?? [])
             timeline.update(
@@ -372,26 +372,27 @@ struct AgentChatSurfaceView: View {
                 turns: transcript?.turns ?? [], precedingTurnEnd: transcript?.precedingTurnEnd, signals: feed.signals,
                 isReady: feed.isReady)
         }
-        .onChange(of: sentMessages, initial: true) { previous, messages in
+        .onChangeCompat(of: sentMessages, initial: true) { previous, messages in
             chat?.updateSends(messages)
             // A new message shows at the end, so the list follows it there.
             let earlier = Set(previous.map(\.id))
             if messages.contains(where: { !earlier.contains($0.id) }) { followRequest += 1 }
         }
-        .onChange(of: composer.draft) { _, draft in
+        .onChangeCompat(of: composer.draft) { _, draft in
             chat?.draftDidChange(to: draft)
         }
         // Also on appearing: Chat may have followed another while it was away.
-        .onChange(of: chat?.conversationGeneration, initial: true) { _, generation in
+        .onChangeCompat(of: chat?.conversationGeneration, initial: true) { _, generation in
             guard let generation else { return }
             welcomeModel = nil
             composer.conversationDidChange(to: generation)
         }
-        .onChange(of: chat?.sendStatuses, initial: true) { _, statuses in
+        .onChangeCompat(of: chat?.sendStatuses, initial: true) { _, statuses in
             guard let statuses else { return }
-            composer.settleUnknownOutcomes(recorded: Set(statuses.filter { $0.value == .recorded }.keys))
+            let recorded = statuses.filter { $0.value == .recorded }
+            composer.settleUnknownOutcomes(recorded: Set(recorded.keys))
         }
-        .onChange(of: chat.map { $0.blocked.content != .none } ?? false) { _, isReplaced in
+        .onChangeCompat(of: chat.map { $0.blocked.content != .none } ?? false) { _, isReplaced in
             // A Blocked card takes the Composer's place, Voice Input and the
             // tools dock with it. iPad keeps `.tools` without focus, so
             // nothing else would put the dock away.
@@ -400,20 +401,20 @@ struct AgentChatSurfaceView: View {
             prepareComposerKeyboardPresentation(.hidden)
             composerKeyboardPresentation = .hidden
         }
-        .onChange(of: selectedPhotos) { _, items in
+        .onChangeCompat(of: selectedPhotos) { _, items in
             guard !items.isEmpty else { return }
             selectedPhotos = []
             let staging = session.staging
             Task { await staging.beginAll(items.map { .photo(PhotosPickerImageSelection(item: $0)) }) }
         }
-        .onChange(of: composer.draft.hasPrefix("/"), initial: true) { _, opensMenu in
+        .onChangeCompat(of: composer.draft.hasPrefix("/"), initial: true) { _, opensMenu in
             guard opensMenu, let skills else { return }
             Task { await skills.loadIfNeeded() }
         }
-        .onChange(of: skillNames, initial: true) { _, names in
+        .onChangeCompat(of: skillNames, initial: true) { _, names in
             chat?.skillsDidLoad(names)
         }
-        .onChange(of: isHostConnected, initial: true) { _, isConnected in
+        .onChangeCompat(of: isHostConnected, initial: true) { _, isConnected in
             chat?.hostConnectionChanged(isConnected)
         }
     }
@@ -502,7 +503,7 @@ struct AgentChatSurfaceView: View {
                 controlPlacement: headerControlPlacement)
             .padding(.horizontal, 12)
             .padding(.top, backHeaderTop)
-            .onChange(of: isBackHeaderExpanded) { _, expanded in
+            .onChangeCompat(of: isBackHeaderExpanded) { _, expanded in
                 if !expanded { isHeaderDrawerOpen = false }
             }
         }
@@ -594,7 +595,7 @@ struct AgentChatSurfaceView: View {
                         placeholder
                             .frame(maxWidth: .infinity, minHeight: proxy.size.height)
                     }
-                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollBounceBasedOnSizeCompat()
                 }
                 // The scroll view reaches under the Composer, whose status
                 // row has no background: a placeholder taller than the room
@@ -672,14 +673,14 @@ struct AgentChatSurfaceView: View {
         case .timeline:
             EmptyView()
         case .departed(let departure):
-            ContentUnavailableView(
-                departure.title, systemImage: departure.systemImage, description: Text(departure.explanation))
+            CompatUnavailableView(
+                verbatim: departure.title, systemImage: departure.systemImage, description: Text(departure.explanation))
             .accessibilityIdentifier("chat.departed")
         case .locating:
             ChatLocatingView()
         case .awaitingHost:
             // The banner above says how the connection is going.
-            ContentUnavailableView(
+            CompatUnavailableView(
                 "Nothing Saved Yet", systemImage: "tray",
                 description: Text(
                     "Chat shows this conversation once its Host connects. This device hasn't saved any of it."))
@@ -701,7 +702,7 @@ struct AgentChatSurfaceView: View {
                 HerdrCoreWindowsExtensionSheet(flow: flow)
             }
         case .disconnected:
-            ContentUnavailableView(
+            CompatUnavailableView(
                 "Not Connected", systemImage: "wifi.slash",
                 description: Text("Chat shows the conversation once this Agent's Host connects."))
         }
@@ -845,7 +846,7 @@ struct AgentChatSurfaceView: View {
                     guard !Task.isCancelled, hold != nil else { return }
                     withAnimation(ChatCheckAgainHold.animation) { hold = nil }
                 }
-                .onChange(of: chat?.isRetrying ?? false) { endIfAnswered() }
+                .onChangeCompat(of: chat?.isRetrying ?? false) { _, _ in endIfAnswered() }
         }
 
         private func endIfAnswered() {
@@ -1602,7 +1603,7 @@ struct AgentChatSurfaceView: View {
 /// Reads the Background Work itself, so a change redraws the strip, not the
 /// whole surface.
 private struct BackgroundWorkInset: View {
-    let chat: AgentChatStore
+    @ObservedObject var chat: AgentChatStore
     let isHostConnected: Bool
     let isCondensed: Bool
     let open: (String?) -> Void

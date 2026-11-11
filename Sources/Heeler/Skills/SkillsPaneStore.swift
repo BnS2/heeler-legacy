@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// The Skills pane's load state. Fetching is lazy — the first time the pane
 /// is selected, not on attach — and a manual refresh keeps the previous list
@@ -8,8 +8,7 @@ import Observation
 /// Kept off the SSH types (standing repo rule): it talks to one injected
 /// closure over the `ConsoleStore`, so it is testable against a script.
 @MainActor
-@Observable
-final class SkillsPaneStore {
+final class SkillsPaneStore: ObservableObject {
     enum Phase: Equatable {
         case idle
         case loading
@@ -17,8 +16,8 @@ final class SkillsPaneStore {
         case failed(String)
     }
 
-    private(set) var phase: Phase = .idle
-    private(set) var skills: [AgentSkill] = []
+    @Published private(set) var phase: Phase = .idle
+    @Published private(set) var skills: [AgentSkill] = []
 
     /// The invocation prefixes this agent's skill sources use, known before
     /// anything is fetched so typing one can open suggestions immediately.
@@ -29,7 +28,7 @@ final class SkillsPaneStore {
     private let fetch: (_ forceRefresh: Bool) async throws -> [AgentSkill]
     /// Flipped synchronously before the first await so a re-selected pane
     /// racing a manual refresh cannot dispatch a second probe.
-    private var isFetching = false
+    @Published private var isFetching = false
 
     init(
         commandPrefixes: [String] = ["/"],

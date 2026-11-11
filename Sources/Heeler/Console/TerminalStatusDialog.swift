@@ -174,7 +174,7 @@ struct TerminalStatusDialog<Actions: View>: View {
     /// separate the card from the grid it sits on — the same trick a TUI uses
     /// for a popup, and it works for a light theme and a dark one alike.
     private var cardBackground: Color {
-        palette.background.mix(with: palette.foreground, by: 0.08)
+        palette.background.mixedCompat(with: palette.foreground, by: 0.08)
     }
 }
 

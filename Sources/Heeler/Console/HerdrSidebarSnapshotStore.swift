@@ -1,12 +1,11 @@
+import Combine
 import Foundation
-import Observation
 
 /// Read-only snapshots borrowed from the Console's existing connections.
 /// A request identity also protects against removal/re-addition of a Host
 /// whose replacement projection starts its generation counter over.
 @MainActor
-@Observable
-final class HerdrSidebarSnapshotStore {
+final class HerdrSidebarSnapshotStore: ObservableObject {
     enum HostState: Equatable, Sendable {
         case loading
         case loaded(AgentRowLayoutSnapshot?)
@@ -18,10 +17,10 @@ final class HerdrSidebarSnapshotStore {
         let revision: UInt64
     }
 
-    private(set) var states: [Host.ID: HostState] = [:]
-    @ObservationIgnored private var connections: [Host.ID: Connection] = [:]
-    @ObservationIgnored private var requests: [Host.ID: UUID] = [:]
-    @ObservationIgnored private var tasks: [Host.ID: Task<Void, Never>] = [:]
+    @Published private(set) var states: [Host.ID: HostState] = [:]
+    private var connections: [Host.ID: Connection] = [:]
+    private var requests: [Host.ID: UUID] = [:]
+    private var tasks: [Host.ID: Task<Void, Never>] = [:]
 
     func snapshot(for hostID: Host.ID) -> AgentRowLayoutSnapshot? {
         guard case .loaded(let snapshot) = states[hostID] else { return nil }

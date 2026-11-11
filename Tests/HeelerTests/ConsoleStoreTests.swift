@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-import Synchronization
 import Testing
 
 @testable import Heeler

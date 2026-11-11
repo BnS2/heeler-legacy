@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 enum AgentRowLayoutStoreError: Error, Equatable {
     case catalogUnreadable
@@ -8,8 +8,7 @@ enum AgentRowLayoutStoreError: Error, Equatable {
 /// Per-Host whole-layout choices. Plugin snapshots belong to the connection
 /// that fetched them and are deliberately not persisted in this catalog.
 @MainActor
-@Observable
-final class AgentRowLayoutStore {
+final class AgentRowLayoutStore: ObservableObject {
     private static let defaultsKey = "agent-row-layouts"
     private static let catalogVersion = 1
 
@@ -30,9 +29,9 @@ final class AgentRowLayoutStore {
         let hostLayouts: [Host.ID: AgentRowLayout.Lenient]
     }
 
-    private(set) var hostLayouts: [Host.ID: AgentRowLayout] = [:]
-    private(set) var catalogLoadError: AgentRowLayoutStoreError?
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var hostLayouts: [Host.ID: AgentRowLayout] = [:]
+    @Published private(set) var catalogLoadError: AgentRowLayoutStoreError?
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

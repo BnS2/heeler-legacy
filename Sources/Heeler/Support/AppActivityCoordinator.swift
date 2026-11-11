@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import UIKit
 
 /// The app's *effective* activity, which is deliberately not `scenePhase`.
@@ -89,8 +89,7 @@ final class UIKitBackgroundExecutionGranter: BackgroundExecutionGranting {
 /// The one exception is expiration, where the system wants its time back
 /// immediately and holding on any longer would kill the app.
 @MainActor
-@Observable
-final class AppActivityCoordinator {
+final class AppActivityCoordinator: ObservableObject {
     /// iOS grants a background-execution assertion on the order of 30
     /// seconds, and on device it has expired as early as 25.5 seconds in.
     /// Stopping well short of that keeps the deliberate teardown inside our
@@ -99,7 +98,7 @@ final class AppActivityCoordinator {
     /// that, and the process froze mid-close (#474).
     static let defaultGracePeriod: Duration = .seconds(15)
 
-    private(set) var phase: AppActivityPhase = .active
+    @Published private(set) var phase: AppActivityPhase = .active
 
     /// Increments on every foreground return, whether or not the grace period
     /// ever reached `.suspended`.
@@ -111,7 +110,7 @@ final class AppActivityCoordinator {
     /// consumer by construction; screens that come and go need a value they
     /// can observe instead, and a monotonic counter is one no `onChange` can
     /// miss.
-    private(set) var activationCount: UInt64 = 0
+    @Published private(set) var activationCount: UInt64 = 0
 
     /// Whether the most recent absence crossed a boundary where iOS could have
     /// suspended the process. This does not claim that suspension occurred or
@@ -122,31 +121,31 @@ final class AppActivityCoordinator {
     /// duration is the fallback for the other real path: iOS freezes the
     /// process before the grace task runs, then the monotonic clock shows on
     /// return that the Background Grace Period elapsed while no Swift task ran.
-    private(set) var lastAbsenceMayHaveSuspended = false
+    @Published private(set) var lastAbsenceMayHaveSuspended = false
 
     #if DEBUG
     /// Retained only for the on-device recovery diagnostic. Release behavior
     /// consumes `lastAbsenceMayHaveSuspended`, not this presentation detail.
-    private(set) var lastAbsenceDuration: Duration?
+    @Published private(set) var lastAbsenceDuration: Duration?
     #endif
 
     /// Every transition, in order and exactly once each. Buffered rather than
     /// latest-value: a background→foreground round trip that completes before
     /// the consumer gets to run must still produce both the teardown and the
     /// activation.
-    @ObservationIgnored nonisolated let events: AsyncStream<AppActivityEvent>
-    @ObservationIgnored
+    nonisolated let events: AsyncStream<AppActivityEvent>
+
     private nonisolated let eventsContinuation: AsyncStream<AppActivityEvent>.Continuation
-    @ObservationIgnored private let gracePeriod: Duration
-    @ObservationIgnored private let granter: any BackgroundExecutionGranting
+    private let gracePeriod: Duration
+    private let granter: any BackgroundExecutionGranting
     /// Injected so a test can state an absence instead of sleeping one.
     /// `ContinuousClock` on purpose: it keeps counting while the process is
     /// suspended, which `SuspendingClock` does not.
-    @ObservationIgnored private let now: @MainActor () -> ContinuousClock.Instant
-    @ObservationIgnored private var token: BackgroundExecutionToken?
-    @ObservationIgnored private var graceTask: Task<Void, Never>?
-    @ObservationIgnored private var leftForegroundAt: ContinuousClock.Instant?
-    @ObservationIgnored private var observedSuspensionDuringAbsence = false
+    private let now: @MainActor () -> ContinuousClock.Instant
+    private var token: BackgroundExecutionToken?
+    private var graceTask: Task<Void, Never>?
+    private var leftForegroundAt: ContinuousClock.Instant?
+    private var observedSuspensionDuringAbsence = false
 
     init(
         gracePeriod: Duration = AppActivityCoordinator.defaultGracePeriod,

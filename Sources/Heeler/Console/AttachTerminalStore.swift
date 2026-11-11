@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 typealias TerminalSessionOperation =
     @MainActor @Sendable (TerminalAttachSession) async throws -> Void
@@ -243,8 +243,7 @@ struct TerminalRecoveryGenerationLatch {
 /// One session per run; the remote attach exiting (the user detached inside
 /// the TUI, the pane closed) surfaces as `.ended` with reattach offered.
 @MainActor
-@Observable
-final class AttachTerminalStore {
+final class AttachTerminalStore: ObservableObject {
     enum Status: Equatable {
         /// Waiting for the terminal view's first layout to report cols/rows.
         case waitingForSize
@@ -268,7 +267,7 @@ final class AttachTerminalStore {
         case stopped
     }
 
-    private(set) var status: Status = .waitingForSize
+    @Published private(set) var status: Status = .waitingForSize
     /// The byte pipe the terminal view consumes.
     let feed = TerminalByteFeed()
     /// What the remote program has asked of its terminal in this session.
@@ -281,13 +280,13 @@ final class AttachTerminalStore {
     private let target: TerminalAttachTarget
     private let takeover: Bool
     /// How the next attach joins a herdr-core Terminal.
-    private var nextViewer: TerminalViewerRole
+    @Published private var nextViewer: TerminalViewerRole
     /// Once output has reached this pipeline its surface holds the scrollback,
     /// and a reattach asking for it again would repeat every line.
-    private var hasTakenOutput = false
+    @Published private var hasTakenOutput = false
     /// Whether anyone is looking at this pipeline's surface. A hidden core
     /// attach reports neither focus nor display facts.
-    private(set) var isViewed: Bool
+    @Published private(set) var isViewed: Bool
     private let input: TerminalInputController
     private let observeOutput: @MainActor @Sendable (Data) -> Void
     private let finishOutput: @MainActor @Sendable () -> Void
@@ -297,16 +296,16 @@ final class AttachTerminalStore {
     /// including explicit channel teardown.
     private let runTerminal: TerminalSessionRunner
 
-    private var cols: Int?
-    private var rows: Int?
-    private(set) var transportGeneration: UInt64?
+    @Published private var cols: Int?
+    @Published private var rows: Int?
+    @Published private(set) var transportGeneration: UInt64?
     /// The Transport generation this pipeline actually acquired from its
     /// runner. Unlike `transportGeneration`, this is never seeded from a
     /// projection value before the terminal-ready seam has been crossed.
-    private(set) var acquiredTransportGeneration: UInt64?
+    @Published private(set) var acquiredTransportGeneration: UInt64?
     /// What the current attach attempt acquired, nil until its runner hands
     /// it a Transport. Only a loss after acquisition is reattached.
-    private var attemptTransportGeneration: UInt64?
+    @Published private var attemptTransportGeneration: UInt64?
     /// A reattach still waiting for a Transport, after a lost connection or a
     /// kept restart, takes the Host's next one by itself. One that already holds
     /// an older Transport never will, so its owner must replace it when the
@@ -314,13 +313,13 @@ final class AttachTerminalStore {
     var isAwaitingReattachTransport: Bool {
         (status == .reconnecting || status == .restarting) && attemptTransportGeneration == nil
     }
-    private var stopRequested = false
-    private var preservesPendingPasteOnStop = false
-    private var session: TerminalAttachSession?
-    private var inputGeneration: TerminalInputController.SessionGeneration?
-    private var runTask: Task<Void, Never>?
+    @Published private var stopRequested = false
+    @Published private var preservesPendingPasteOnStop = false
+    @Published private var session: TerminalAttachSession?
+    @Published private var inputGeneration: TerminalInputController.SessionGeneration?
+    @Published private var runTask: Task<Void, Never>?
     #if DEBUG
-    private(set) var restorationTrace = AttachRestorationTrace()
+    @Published private(set) var restorationTrace = AttachRestorationTrace()
 
     func adoptRestorationTrace(_ trace: AttachRestorationTrace) {
         restorationTrace = trace

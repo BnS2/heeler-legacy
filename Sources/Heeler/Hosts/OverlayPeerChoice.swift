@@ -1,6 +1,6 @@
+import Combine
 import Foundation
 import HeelerOverlay
-import Observation
 
 /// One peer of an Overlay Network offered as a Host (or Jump Host) address.
 /// Only Tailscale and EasyTier report overlay addresses for their peers;
@@ -327,8 +327,7 @@ enum OverlayPeerTarget: Equatable, Sendable {
 /// Loads a network's peers for the "Choose from …" sheet, starting its node
 /// when needed, and keeps the outcome for the view.
 @MainActor
-@Observable
-final class OverlayPeerPickerModel {
+final class OverlayPeerPickerModel: ObservableObject {
     enum Phase: Equatable {
         case loading
         case loaded([OverlayPeerCandidate])
@@ -339,9 +338,9 @@ final class OverlayPeerPickerModel {
 
     typealias Loader = @MainActor (_ startIfNeeded: Bool) async throws -> [OverlayPeer]
 
-    private(set) var phase = Phase.loading
-    @ObservationIgnored private let loader: Loader
-    @ObservationIgnored private var loading: Task<Void, Never>?
+    @Published private(set) var phase = Phase.loading
+    private let loader: Loader
+    private var loading: Task<Void, Never>?
 
     init(loader: @escaping Loader) {
         self.loader = loader

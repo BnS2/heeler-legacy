@@ -4,7 +4,7 @@ import SwiftUI
 /// a button per numbered option, and the keys to finish it.
 struct GenericDialogCard: View {
     let excerpt: GenericDialogExcerpt
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     let maxHeight: CGFloat
     let openTerminal: () -> Void
     @State private var showsKeys = false
@@ -56,7 +56,7 @@ struct GenericDialogCard: View {
 /// the program's prompt would act on the key pad's keys, the store's note
 /// says why it is Blocked in their place.
 struct UnreadableDialogCard: View {
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     let openTerminal: () -> Void
 
     var body: some View {
@@ -78,8 +78,7 @@ struct UnreadableDialogCard: View {
 
 /// The keys for a prompt Heeler can't read: the tools dock's Agent page.
 struct BlockedKeyPad: View {
-    let store: BlockedCardStore
-
+    @ObservedObject var store: BlockedCardStore
     var body: some View {
         AgentQuickKeyPad(isEnabled: store.progress != .acting, insets: EdgeInsets()) { key in
             guard let name = key.herdrKeyName else { return }

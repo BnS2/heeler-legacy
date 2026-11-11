@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import UIKit
 
@@ -6,8 +7,7 @@ import UIKit
 /// connection, decoded small and kept in memory only. A file larger than
 /// ``automaticBytes`` waits for a tap.
 @MainActor
-@Observable
-final class ChatImageThumbnails {
+final class ChatImageThumbnails: ObservableObject {
     enum Phase: Equatable {
         /// Waiting its turn, or reading.
         case loading
@@ -49,21 +49,21 @@ final class ChatImageThumbnails {
     /// a row's width, with room to spare.
     nonisolated static let maximumPixelSize = 1_024
 
-    private var phases: [String: Phase] = [:]
-    @ObservationIgnored private let source: Source
-    @ObservationIgnored private let cache: ChatImageThumbnailCache
+    @Published private var phases: [String: Phase] = [:]
+    private let source: Source
+    private let cache: ChatImageThumbnailCache
     /// Keys this store's pictures in the shared cache.
-    @ObservationIgnored private let scope = UUID()
+    private let scope = UUID()
     /// How many rows show each path right now.
-    @ObservationIgnored private var shown: [String: Int] = [:]
-    @ObservationIgnored private var queue: [String] = []
-    @ObservationIgnored private var current: Run?
-    @ObservationIgnored private var runs = 0
+    private var shown: [String: Int] = [:]
+    private var queue: [String] = []
+    private var current: Run?
+    private var runs = 0
     /// What each path's file was when last read, which finds its kept copy.
-    @ObservationIgnored private var stamps: [String: ChatImageStamp] = [:]
+    private var stamps: [String: ChatImageStamp] = [:]
     /// Paths a tap asked to read whatever their size.
-    @ObservationIgnored private var readsWhole: Set<String> = []
-    @ObservationIgnored private var isHostConnected = true
+    private var readsWhole: Set<String> = []
+    private var isHostConnected = true
 
     private struct Run {
         let path: String

@@ -1,12 +1,11 @@
+import Combine
 import Foundation
-import Observation
 
 /// The app-wide terminal font size, in points. Pinch-to-zoom on an Attach
 /// terminal writes here, so a zoom survives leaving the screen and applies to
 /// every terminal the app opens afterwards.
 @MainActor
-@Observable
-final class TerminalZoomSettings {
+final class TerminalZoomSettings: ObservableObject {
     static let defaultFontSize: Float = 8
     /// Whole points only. The low end goes all the way down to libghostty's
     /// own minimum: 4 pt is unreadable, but it fits a wide TUI on screen, and
@@ -15,8 +14,8 @@ final class TerminalZoomSettings {
 
     private static let defaultsKey = "terminal-font-size"
 
-    private(set) var fontSize: Float
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var fontSize: Float
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

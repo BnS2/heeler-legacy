@@ -245,7 +245,7 @@ struct AgentUsageBreakdown: View {
                     .textSelection(.enabled)
                 if let subtitle = row.subtitle {
                     (Text(row.host.map { "\($0) · " } ?? "")
-                        + Text(subtitle).monospaced())
+                        + Text(subtitle).fontDesignCompat(.monospaced))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -344,11 +344,11 @@ struct AgentUsageDaySheet: View {
         // An iPhone keeps the page reachable above the sheet; a form sheet
         // floats over it at its full height.
         .presentationDetents(isFormSheet ? [.large] : [.fraction(0.65), .large])
-        .presentationBackgroundInteraction(
-            isFormSheet ? .disabled : .enabled(upThrough: .fraction(0.65)))
+        .presentationBackgroundInteractionCompat(
+            isFormSheet, upThrough: .fraction(0.65))
         // A partial-height sheet is glass on iOS 26, and the dashboard
         // behind it showed through the figures.
-        .presentationBackground(Color(uiColor: .systemBackground))
+        .presentationBackgroundCompat(Color(uiColor: .systemBackground))
     }
 
     private var header: some View {
@@ -377,7 +377,7 @@ struct AgentUsageDaySheet: View {
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.bordered)
-        .buttonBorderShape(.circle)
+        .buttonBorderShapeCircleCompat()
         .padding(.top, 20)
     }
 
@@ -501,7 +501,7 @@ struct AgentUsageLimitsSheet: View {
                     CodexUsageLimitsNote()
                 }
             }
-            .listSectionSpacing(.compact)
+            .listSectionSpacingCompactCompat()
             .navigationTitle("Usage Limits")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -697,8 +697,7 @@ struct AgentUsageUncountedAccount: View {
 /// Claude Code Accounts need before Usage counts them. Accounts themselves
 /// are managed in Settings › Agents & Accounts.
 struct ClaudeAccountsRequirementNote: View {
-    let store: AgentUsageStore
-
+    @ObservedObject var store: AgentUsageStore
     var body: some View {
         if let note = store.claudeAccountsRequirement {
             VStack(alignment: .leading, spacing: 2) {

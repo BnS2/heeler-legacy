@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// A viewer's first paint (`viewers.rs` `first_paint`): the core's own repaint of
 /// the screen, with its modes, cursor and styles, then whether the program wants

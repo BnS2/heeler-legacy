@@ -1,5 +1,4 @@
 import Foundation
-import Observation
 import SwiftUI
 import UIKit
 
@@ -148,8 +147,7 @@ protocol AgentSceneWindow: AnyObject {
 /// one that loses the channel releases its Attach and the one that gains it
 /// rejoins, both through the Attach store's existing leave and rejoin.
 @MainActor
-@Observable
-final class AgentSceneDirectory {
+final class AgentSceneDirectory: ObservableObject {
     private struct Entry {
         let router: AgentNotificationRouter
         let window: (any AgentSceneWindow)?
@@ -165,18 +163,18 @@ final class AgentSceneDirectory {
         var coveredAgent: ConsoleAgent.ID?
     }
 
-    @ObservationIgnored private var entries: [UUID: Entry] = [:]
+    private var entries: [UUID: Entry] = [:]
     /// Connection order, so iteration and tie-breaks are deterministic.
-    @ObservationIgnored private var order: [UUID] = []
-    @ObservationIgnored private var activationClock: UInt64 = 0
-    @ObservationIgnored private var disconnectObserver: NSObjectProtocol?
+    private var order: [UUID] = []
+    private var activationClock: UInt64 = 0
+    private var disconnectObserver: NSObjectProtocol?
     /// A link that arrived before any window connected. The inner optional
     /// is the link itself: nil means "the Console".
-    @ObservationIgnored private var pendingOpen: AgentNotificationTarget??
+    private var pendingOpen: AgentNotificationTarget??
     /// Observed: each window's Agent detail re-reads its access when either
     /// changes.
-    private var terminalClaims: [HostTerminalClaim] = []
-    private var terminalOwnership = HostTerminalOwnership()
+    @Published private var terminalClaims: [HostTerminalClaim] = []
+    @Published private var terminalOwnership = HostTerminalOwnership()
 
     init() {}
 

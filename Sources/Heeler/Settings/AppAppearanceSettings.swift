@@ -1,5 +1,4 @@
 import Foundation
-import Observation
 import SwiftUI
 
 /// How the app itself should be lit. Separate from the terminal theme slots
@@ -34,12 +33,11 @@ enum AppAppearanceOption: String, CaseIterable, Identifiable, Sendable {
 /// downstream — including the terminal surfaces, which resolve their theme
 /// against `\.colorScheme` — follows from that single `preferredColorScheme`.
 @MainActor
-@Observable
-final class AppAppearanceSettings {
+final class AppAppearanceSettings: ObservableObject {
     private static let defaultsKey = "app-appearance"
 
-    private(set) var selection: AppAppearanceOption
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var selection: AppAppearanceOption
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

@@ -60,10 +60,9 @@ final class WindowReaderView: UIView {
 /// the way they would read any other observable value, so a subtree that
 /// renders before its window attaches renders again once it has.
 @MainActor
-@Observable
-final class WindowReference {
-    @ObservationIgnored private weak var storage: UIWindow?
-    private var attachments: UInt64 = 0
+final class WindowReference: ObservableObject {
+    private weak var storage: UIWindow?
+    @Published private var attachments: UInt64 = 0
 
     init() {}
 
@@ -89,8 +88,8 @@ final class WindowReference {
         installInteractionRecognizer()
     }
 
-    @ObservationIgnored private var interactionHandler: (@MainActor () -> Void)?
-    @ObservationIgnored private var interactionRecognizer: WindowInteractionRecognizer?
+    private var interactionHandler: (@MainActor () -> Void)?
+    private var interactionRecognizer: WindowInteractionRecognizer?
 
     /// Keeps exactly one recognizer, on the attached window. It reaches the
     /// handler through this reference weakly, so the window never retains

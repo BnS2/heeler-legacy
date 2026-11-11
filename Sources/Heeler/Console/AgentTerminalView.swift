@@ -221,12 +221,12 @@ struct AgentTerminalView: View {
     /// to other terminals.
     private let workspaceDrawer: WorkspaceTerminalDrawer?
     /// Follows the Agent's own session file for the usage strip (#325).
-    @State private var sessionUsage = AgentSessionUsageStore()
+    @StateObject private var sessionUsage = AgentSessionUsageStore()
     @State private var attach: AgentAttachStore
 
     /// Nil for agent kinds without a skills source catalog.
     @State private var skillsStore: SkillsPaneStore?
-    @State private var keyboardControl = TerminalKeyboardControl()
+    @StateObject private var keyboardControl = TerminalKeyboardControl()
     @State private var messageJump: AgentMessageJumpWiring
     @State private var composerKeyboardPresentation: AgentComposerKeyboardPresentation = .hidden
     /// Keeps Composer mounted while its visible system keyboard moves to the
@@ -253,7 +253,7 @@ struct AgentTerminalView: View {
     @State private var expectsDirectSystemKeyboard = false
     /// Survives same-screen terminal replacement so a raised Direct Input
     /// keyboard is reclaimed without raising one that was down.
-    @State private var directKeyboardIntent = DirectInputKeyboardIntent()
+    @StateObject private var directKeyboardIntent = DirectInputKeyboardIntent()
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var isSelectingPhoto = false
     @State private var isSelectingFile = false
@@ -293,7 +293,7 @@ struct AgentTerminalView: View {
     @State private var isHeaderDrawerOpen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// This view's own window, for hosts without a scene root.
-    @State private var mountedWindow = WindowReference()
+    @StateObject private var mountedWindow = WindowReference()
     @Environment(\.detailTopChromeInset) private var topChromeInset
     @Environment(\.detailBarRow) private var barRow
     @Environment(\.detailSurfaceEdges) private var surfaceEdges
@@ -751,7 +751,7 @@ struct AgentTerminalView: View {
 
     private var lifecycleSurface: some View {
         alertSurface
-        .onChange(of: selectedPhotos) { _, items in
+        .onChangeCompat(of: selectedPhotos) { _, items in
             guard !items.isEmpty else { return }
             selectedPhotos = []
             let staging = session.staging
@@ -763,10 +763,10 @@ struct AgentTerminalView: View {
         // see (#141).
         // `initial` lets a replacement screen claim an activation that landed
         // after its predecessor disappeared but before this observer existed.
-        .onChange(of: activity.activationCount, initial: true) { _, _ in
+        .onChangeCompat(of: activity.activationCount, initial: true) { _, _ in
             handleActivation()
         }
-        .onChange(of: console.hostConnectionGenerations[agent.hostID]) { _, generation in
+        .onChangeCompat(of: console.hostConnectionGenerations[agent.hostID]) { _, generation in
             armDirectKeyboardClaimIfNeeded()
             attach.transportGenerationDidChange(generation)
         }
@@ -832,19 +832,19 @@ struct AgentTerminalView: View {
                 cancelKeyboardHandoffs()
             }
         }
-        .onChange(of: inputMode.isDirect) { _, isDirect in
+        .onChangeCompat(of: inputMode.isDirect) { _, isDirect in
             // Direct Input writes straight to the PTY; there is no draft
             // for Voice Input's text to wait in.
             if isDirect { composer.voice.cancel() }
         }
-        .onChange(of: agent.agent.status) { _, status in
+        .onChangeCompat(of: agent.agent.status) { _, status in
             // A new turn may have pushed the conversation past the screen;
             // re-offer Up if an earlier walk had found nothing above.
             if status == .working {
                 messageJump.noteConversationGrew()
             }
         }
-        .onChange(of: attach.terminalID) { _, _ in
+        .onChangeCompat(of: attach.terminalID) { _, _ in
             messageJump.resetSession()
             cancelKeyboardHandoffs()
             guard isDirectInput else { return }
@@ -860,18 +860,18 @@ struct AgentTerminalView: View {
         // A fresh terminal ID means a new Attach pipeline, including a
         // foreground recovery. Mark its visible detail edge separately from
         // outer SwiftUI appearance, which does not run for that replacement.
-        .onChange(of: attach.terminalID, initial: true) { _, _ in
+        .onChangeCompat(of: attach.terminalID, initial: true) { _, _ in
             attach.terminalDidBecomeVisible()
             recordSwitcherAvailabilityIfPossible()
         }
         // The switcher consumes this snapshot-derived input. Waiting until the
         // selected Agent is present avoids treating an empty/stale projection
         // as availability.
-        .onChange(of: console.agents) { _, _ in
+        .onChangeCompat(of: console.agents) { _, _ in
             recordSwitcherAvailabilityIfPossible()
         }
         #endif
-        .onChange(of: keyboardControl.isFirstResponder) { _, isUp in
+        .onChangeCompat(of: keyboardControl.isFirstResponder) { _, isUp in
             guard isDirectInput else { return }
             if isUp {
                 // On iPad the tools dock stands without a responder, so a tap
@@ -884,7 +884,7 @@ struct AgentTerminalView: View {
             // real dismiss resigns and must drop the pre-show `.system` hold.
             expectsDirectSystemKeyboard = false
         }
-        .onChange(of: keyboardInset.height) { _, height in
+        .onChangeCompat(of: keyboardInset.height) { _, height in
             // Release the Tools→iOS pre-show hold only after the software
             // keyboard has actually appeared. Clearing while height is still
             // zero would dip through `.hidden`; clearing once height is
@@ -1173,7 +1173,7 @@ struct AgentTerminalView: View {
                 terminal.themes.selection(for: themeAppearance).chromeColorScheme(for: themeAppearance))
             .padding(.horizontal, 12)
             .padding(.top, backHeaderTop)
-            .onChange(of: isBackHeaderExpanded) { _, expanded in
+            .onChangeCompat(of: isBackHeaderExpanded) { _, expanded in
                 if !expanded { isHeaderDrawerOpen = false }
             }
         }
@@ -1344,7 +1344,7 @@ struct AgentTerminalView: View {
                     switchDirectKeyboard: presentedDirectKeyboardSwitchAction)
             }
             .onDisappear { interactionProbe?.value?.directInputChromeDidDisappear() }
-            .onChange(of: isDirectKeyboardSwitchPresented) { _, _ in
+            .onChangeCompat(of: isDirectKeyboardSwitchPresented) { _, _ in
                 interactionProbe?.value?.updateSwitchDirectKeyboard(
                     presentedDirectKeyboardSwitchAction)
             }
@@ -2079,7 +2079,7 @@ struct AttachLinksPopover: ViewModifier {
         ) {
             AttachLinksView(links: links, open: open, copy: copy)
                 // Regular width keeps the popover; only compact size classes adapt.
-                .presentationCompactAdaptation(.sheet)
+                .presentationCompactAdaptationSheetCompat()
         }
     }
 }

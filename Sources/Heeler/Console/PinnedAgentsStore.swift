@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// Pins the user has chosen on Console rows, keyed by `(hostID, paneID)` —
 /// the same identity as `ConsoleAgent.ID`. Array order is recency: most
@@ -8,8 +8,7 @@ import Observation
 /// a herdr restart is still pinned. A herdr-core Host's projection prunes its
 /// own, since an address is never reused (ADR 0031).
 @MainActor
-@Observable
-final class PinnedAgentsStore {
+final class PinnedAgentsStore: ObservableObject {
     private static let defaultsKey = "pinned-agents"
     private static let blobVersion = 1
 
@@ -23,12 +22,12 @@ final class PinnedAgentsStore {
         let paneID: String
     }
 
-    private var entries: [Entry]
+    @Published private var entries: [Entry]
     /// Increments on every pin toggle so observers (Live Activity) can
     /// rebuild without waiting for the Console list to change identity.
-    private(set) var revision: UInt64 = 0
+    @Published private(set) var revision: UInt64 = 0
     // UserDefaults is documented thread-safe; Sendable modulo that promise.
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

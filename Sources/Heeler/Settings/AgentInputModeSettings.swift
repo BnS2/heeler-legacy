@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 
 /// How Agent detail accepts authored input. Composer is the ADR 0013 default;
 /// Direct Input is the opt-in exception that routes the system keyboard into
@@ -24,12 +24,11 @@ enum AgentInputMode: String, CaseIterable, Identifiable, Sendable {
 /// and Agent switches. Default remains Composer; unknown stored values fall
 /// back to Composer rather than inventing Direct Input.
 @MainActor
-@Observable
-final class AgentInputModeSettings {
+final class AgentInputModeSettings: ObservableObject {
     private static let defaultsKey = "agent-input-mode"
 
-    private(set) var mode: AgentInputMode
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var mode: AgentInputMode
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

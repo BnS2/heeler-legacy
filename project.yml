@@ -2,7 +2,7 @@ name: Heeler
 options:
   bundleIdPrefix: dev.bybee
   deploymentTarget:
-    iOS: "18.0"
+    iOS: "16.0"
   createIntermediateGroups: true
   minimumXcodeGenVersion: "2.42.0"
 
@@ -46,6 +46,7 @@ targets:
           # Bundled as a folder reference below so notice files stay under
           # Notices/ in the app bundle rather than flattening to the root.
           - Resources/Notices
+          - "**/.claude/**"
       # Notification code shared with the service extension: envelope
       # decryption, Notification Key store, alert renderer (ADR 0008).
       - Sources/HeelerNotificationCore
@@ -222,6 +223,8 @@ targets:
   HeelerWidgets:
     type: app-extension
     platform: iOS
+    # Widgets and Live Activity UI stay on iOS 18; the iOS 16 build ships without them.
+    deploymentTarget: "18.0"
     sources:
       - Sources/HeelerWidgets
       # The app's String Catalog, compiled into this extension's bundle too:
@@ -271,6 +274,8 @@ targets:
   HeelerTests:
     type: bundle.unit-test
     platform: iOS
+    # Test helpers use @Observable (iOS 17+); tests run on current simulators.
+    deploymentTarget: "18.0"
     sources:
       - path: Tests/HeelerTests
         excludes:
@@ -341,6 +346,8 @@ targets:
   HeelerLiveTests:
     type: bundle.unit-test
     platform: iOS
+    # Test helpers use @Observable (iOS 17+); tests run on current simulators.
+    deploymentTarget: "18.0"
     sources:
       - Tests/HeelerLiveTests
       - Tests/HeelerTests/Support/RealSSHFixture.swift

@@ -8,7 +8,7 @@ import SwiftUI
 /// No search field, for the same responder reason as the Snippets pane: a
 /// text field inside a `UIInputView` would replace the keyboard it lives in.
 struct SkillsKeyboardPane: View {
-    let store: SkillsPaneStore
+    @ObservedObject var store: SkillsPaneStore
     let onInsert: (AgentSkill) -> Void
     let onViewContent: (AgentSkill) -> Void
 
@@ -70,7 +70,7 @@ struct SkillsKeyboardPane: View {
                 section(titled: String(localized: "Global"), skills: store.globalSkills)
             }
         }
-        .scrollBounceBehavior(.basedOnSize)
+        .scrollBounceBasedOnSizeCompat()
     }
 
     @ViewBuilder
@@ -135,7 +135,7 @@ struct SkillRowButton: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(skill.command)
                     .font(.subheadline.weight(.medium))
-                    .fontDesign(.monospaced)
+                    .fontDesignCompat(.monospaced)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 if let description = skill.description {
@@ -172,7 +172,7 @@ struct SkillDetailPreview: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(skill.command)
                 .font(.title3.weight(.semibold))
-                .fontDesign(.monospaced)
+                .fontDesignCompat(.monospaced)
             Text(skill.scope == .project ? "Project" : "Global")
                 .font(.caption.weight(.semibold))
                 .textCase(.uppercase)

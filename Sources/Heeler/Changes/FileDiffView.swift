@@ -3,7 +3,7 @@ import SwiftUI
 /// One file's lazy read. Pulling and retrying belong to this file, not the
 /// Checkout's list, and leaving cancels every read owned by the presentation.
 struct FileDiffView: View {
-    let store: FileDiffStore
+    @ObservedObject var store: FileDiffStore
     @State private var action: Task<Void, Never>?
     @Environment(\.diffSurface) private var surface
 
@@ -23,7 +23,7 @@ struct FileDiffView: View {
                 }
                 .refreshable { await store.refresh() }
             case .failed(let message):
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("Couldn't Read Diff", systemImage: "exclamationmark.triangle")
                 } description: {
                     Text(message)
@@ -161,8 +161,8 @@ private struct FileDiffDocumentView<Footer: View & SendableMetatype>: View {
                     }
                     footer
                 }
-                .scrollTargetLayout()
-                .coordinateSpace(.named(DiffHatch.coordinateSpace))
+                .scrollTargetLayoutCompat()
+                .coordinateSpace(name: DiffHatch.coordinateSpace)
                 // The rows' own width. Deriving it from the scroll view's
                 // safe area counted a sidebar beside the diff twice: the
                 // view already excluded it and still reported it as inset.
@@ -187,32 +187,24 @@ private struct FileDiffDocumentView<Footer: View & SendableMetatype>: View {
                         .allowsHitTesting(false)
                 }
             }
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.containerSize.height
-            } action: { _, height in
-                anchor.noteContainerHeight(height)
-            }
-            .onScrollGeometryChange(for: CGFloat?.self) { geometry in
-                geometry.visibleRect.maxY >= geometry.contentSize.height - 1
-                    ? geometry.contentSize.height : nil
-            } action: { _, height in
-                endRecovery.noteEnd(contentHeight: height)
-            }
+            .modifier(DiffScrollObservers(
+                noteContainerHeight: { anchor.noteContainerHeight($0) },
+                noteEnd: { endRecovery.noteEnd(contentHeight: $0) }))
             .onAppear {
                 anchor.adopt(scroll)
                 endRecovery.adopt(scroll)
             }
-            .onChange(of: decision.layout) { _, layout in
+            .onChangeCompat(of: decision.layout) { _, layout in
                 keepTopLine(for: layout, proxy: scroll)
             }
-            .onChange(of: usableWidth) { old, new in
+            .onChangeCompat(of: usableWidth) { old, new in
                 guard let old, let new, abs(new - old) >= 1 else {
                     anchor.adopt(scroll)
                     return
                 }
                 keepTopLine(for: resolvedLayout(usableWidth: new, columnWidth: columnWidth), proxy: scroll)
             }
-            .onChange(of: columnWidth) { _, columnWidth in
+            .onChangeCompat(of: columnWidth) { _, columnWidth in
                 guard let usableWidth else { return }
                 keepTopLine(
                     for: resolvedLayout(usableWidth: usableWidth, columnWidth: columnWidth),
@@ -689,7 +681,7 @@ private final class DiffScrollAnchor<ID: Hashable> {
 /// One footer is the integration point for the file's line counts. All
 /// too-large wording, including its accessibility text, comes from the store.
 private struct FileDiffFooter: View {
-    let store: FileDiffStore
+    @ObservedObject var store: FileDiffStore
     let loadMore: () -> Void
 
     var body: some View {
@@ -711,5 +703,29 @@ private struct FileDiffFooter: View {
         .font(.callout)
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// iOS 16: scroll-geometry observation is iOS 18; older systems skip it.
+private struct DiffScrollObservers: ViewModifier {
+    let noteContainerHeight: (CGFloat) -> Void
+    let noteEnd: (CGFloat?) -> Void
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 18, *) {
+            content
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    geometry.containerSize.height
+                } action: { _, height in
+                    noteContainerHeight(height)
+                }
+                .onScrollGeometryChange(for: CGFloat?.self) { geometry in
+                    geometry.visibleRect.maxY >= geometry.contentSize.height - 1
+                        ? geometry.contentSize.height : nil
+                } action: { _, height in
+                    noteEnd(height)
+                }
+        } else {
+            content
+        }
     }
 }

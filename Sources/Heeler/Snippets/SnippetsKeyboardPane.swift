@@ -9,7 +9,7 @@ import SwiftUI
 /// together. Search lives in the management sheet, where the responder
 /// environment is ordinary.
 struct SnippetsKeyboardPane: View {
-    let store: SnippetStore
+    @ObservedObject var store: SnippetStore
     let onSend: (Snippet) -> Void
     let onManage: () -> Void
 
@@ -34,7 +34,7 @@ struct SnippetsKeyboardPane: View {
                     }
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .scrollBounceBasedOnSizeCompat()
 
             if !store.snippets.isEmpty {
                 Divider()
@@ -94,7 +94,7 @@ struct SnippetRowButton: View {
                 if let subtitle = snippet.displaySubtitle {
                     Text(subtitle)
                         .font(.caption)
-                        .fontDesign(.monospaced)
+                        .fontDesignCompat(.monospaced)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }

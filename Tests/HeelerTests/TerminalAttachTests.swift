@@ -2,7 +2,6 @@ import Foundation
 import GhosttyTerminal
 import HeelerSSH
 import SwiftUI
-import Synchronization
 import Testing
 import UIKit
 

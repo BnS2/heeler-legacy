@@ -727,7 +727,7 @@ struct TerminalAgentSwitcherRow: View {
                 .frame(width: Self.glyphSlotSize, height: Self.glyphSlotSize)
                 .offset(x: horizontalOffset)
                 .frame(width: 44, height: TerminalAgentSwitcherBar.preferredHeight)
-                .contentTransition(.symbolEffect(.replace))
+                .contentTransitionSymbolReplaceCompat()
         }
         .buttonStyle(.plain)
         .frame(width: 44, height: 44)

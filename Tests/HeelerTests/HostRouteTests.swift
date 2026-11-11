@@ -1,7 +1,6 @@
 import Foundation
 import HeelerOverlay
 import HeelerSSH
-import Synchronization
 import Testing
 
 @testable import Heeler

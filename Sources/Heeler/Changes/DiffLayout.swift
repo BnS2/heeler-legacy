@@ -1,5 +1,4 @@
 import Foundation
-import Observation
 import SwiftUI
 import UIKit
 
@@ -116,13 +115,12 @@ enum DiffLayoutPolicy {
 /// `ChangesStore`. Views read it through the `diffLayoutSettings` environment
 /// value, falling back to ``shared`` outside tests and demo mode.
 @MainActor
-@Observable
-final class DiffLayoutSettings {
+final class DiffLayoutSettings: ObservableObject {
     private static let defaultsKey = "changes.diff-layout"
 
-    private(set) var layout: DiffLayout
+    @Published private(set) var layout: DiffLayout
     let offersSideBySide: Bool
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard, offersSideBySide: Bool) {
         self.defaults = defaults

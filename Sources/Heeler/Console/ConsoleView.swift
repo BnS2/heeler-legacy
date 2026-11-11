@@ -11,25 +11,25 @@ import SwiftUI
 /// regular width a list tab swaps its own last selection back in when it
 /// returns.
 struct ConsoleView: View {
-    let hosts: HostStore
-    let console: ConsoleStore
+    @ObservedObject var hosts: HostStore
+    @ObservedObject var console: ConsoleStore
     let terminal: TerminalSettings
-    let inputMode: AgentInputModeSettings
-    let detailSurface: AgentDetailSurfaceSettings
-    let appearance: AppAppearanceSettings
-    let pushRegistration: PushRegistrationStore
-    let notificationPreferences: NotificationPreferencesStore
-    let relaySettings: NotificationRelaySettings
+    @ObservedObject var inputMode: AgentInputModeSettings
+    @ObservedObject var detailSurface: AgentDetailSurfaceSettings
+    @ObservedObject var appearance: AppAppearanceSettings
+    @ObservedObject var pushRegistration: PushRegistrationStore
+    @ObservedObject var notificationPreferences: NotificationPreferencesStore
+    @ObservedObject var relaySettings: NotificationRelaySettings
     /// Owns the navigation path (#74): user taps and notification deep links
     /// drive the same stack.
-    @Bindable var notificationRouter: AgentNotificationRouter
+    @ObservedObject var notificationRouter: AgentNotificationRouter
     /// Announces foreground Blocked/Done transitions in-app (#77).
-    let bannerStore: AgentNotificationBannerStore
+    @ObservedObject var bannerStore: AgentNotificationBannerStore
     /// Per-Host Live Activity start/update/end and the Settings toggle.
-    let liveActivities: HostLiveActivityCoordinator
+    @ObservedObject var liveActivities: HostLiveActivityCoordinator
     /// Scene phase widened by the background grace period; an Attach screen
     /// pauses its work on real suspensions only.
-    let activity: AppActivityCoordinator
+    @ObservedObject var activity: AppActivityCoordinator
     /// A shell terminal chosen from the Terminals tab or Agent detail's
     /// drawer. It shares the detail column with the router's Agent path;
     /// only one is ever set.
@@ -70,7 +70,7 @@ struct ConsoleView: View {
     /// point at.
     @State private var listMenuTitleFrame: CGRect?
     @State private var isStartingTerminal = false
-    @State private var terminalPresentation = TerminalListPresentationStore()
+    @StateObject private var terminalPresentation = TerminalListPresentationStore()
     /// Where the detail column's navigation bar sits, from the column's top
     /// edge. In regular width it starts just below the status bar; see
     /// `detailTopChromeInset`.
@@ -131,7 +131,7 @@ struct ConsoleView: View {
     @State private var isTerminalSearchPresented = false
     /// The list whose search field has focus.
     @FocusState private var focusedSearch: ConsoleTab?
-    @State private var commandRegistry = ConsoleCommandRegistry()
+    @StateObject private var commandRegistry = ConsoleCommandRegistry()
     /// Row-level `tab.close` failure text; non-nil shows the error alert.
     @State private var tabCloseError: String?
     /// The Agent whose tab the swipe action would close; non-nil shows the
@@ -141,7 +141,7 @@ struct ConsoleView: View {
     /// separate from a close, which asks the Host and says so.
     @State private var pendingSavedChatRemoval: ConsoleAgent?
     /// Owns presentation mode and Host/Workspace collapse state.
-    @State private var listPresentation = ConsoleListPresentationStore()
+    @StateObject private var listPresentation = ConsoleListPresentationStore()
     /// Outlives the detail column's rebuilds, which is the whole point: it
     /// carries the raised keyboard from one Attach screen to the next.
     @State private var keyboardHandoff = TerminalKeyboardHandoff()
@@ -151,7 +151,7 @@ struct ConsoleView: View {
     /// raised keyboard would lay out full height first and shrink a moment
     /// later — an extra reflow, and a Connecting dialog that visibly jumps
     /// from the middle of the screen to the middle of the terminal.
-    @State private var keyboardInset = TerminalKeyboardInset()
+    @StateObject private var keyboardInset = TerminalKeyboardInset()
     /// Per list tab: hiding one list's sidebar leaves the other's alone, and
     /// a split view coming back on screen cannot overwrite a hide made in
     /// the other tab with its own stale state.
@@ -175,7 +175,8 @@ struct ConsoleView: View {
         tabs.modifier(ConsoleDetailCoresRetention(cores: detailCores, held: heldDetails))
     }
 
-    private var tabs: some View {
+    @available(iOS 18, *)
+    private var tabViewModern: some View {
         TabView(selection: tabViewSelection) {
             Tab(ConsoleTab.agents.title, systemImage: "sparkles", value: ConsoleTab.agents) {
                 splitView(for: usesSidebarNavigation ? shownListTab : .agents)
@@ -189,7 +190,7 @@ struct ConsoleView: View {
                     // Still asking for the bar hidden: a tab's request
                     // vanishing reads to SwiftUI as asking for the bar, and
                     // one left by a compact detail would bring it back.
-                    Color.clear.toolbarVisibility(.hidden, for: .tabBar)
+                    Color.clear.toolbar(.hidden, for: .tabBar)
                 }
             } label: {
                 // The tab bar fills symbols; filled, this one is a solid
@@ -219,6 +220,48 @@ struct ConsoleView: View {
                     .environment(\.symbolVariants, .none)
             }
         }
+    }
+
+    /// iOS 16: the classic `tabItem` TabView; `Tab` and the sidebar style are iOS 18.
+    private var tabViewLegacy: some View {
+        TabView(selection: tabViewSelection) {
+            splitView(for: usesSidebarNavigation ? shownListTab : .agents)
+                .tabItem { Label(ConsoleTab.agents.title, systemImage: "sparkles") }
+                .tag(ConsoleTab.agents)
+            Group {
+                if !usesSidebarNavigation {
+                    splitView(for: .terminals)
+                } else {
+                    Color.clear.toolbar(.hidden, for: .tabBar)
+                }
+            }
+            .tabItem { Label(ConsoleTab.terminals.title, systemImage: "terminal") }
+            .tag(ConsoleTab.terminals)
+            if console.isUsageEnabled {
+                usageTab()
+                    .tabItem { Label(ConsoleTab.usage.title, systemImage: "chart.bar.xaxis") }
+                    .tag(ConsoleTab.usage)
+            }
+            hostList(
+                origin: hostsTabRequest?.origin.map { origin in
+                    HostListOrigin(title: origin.title) { selectedTab.wrappedValue = origin }
+                })
+            .id(hostsTabGeneration)
+            .tabItem { Label(ConsoleTab.hosts.title, systemImage: "server.rack") }
+            .tag(ConsoleTab.hosts)
+            settingsView()
+                .id(settingsTabGeneration)
+                .tabItem { Label(ConsoleTab.settings.title, systemImage: "gearshape") }
+                .tag(ConsoleTab.settings)
+        }
+    }
+
+    @ViewBuilder private var tabViewBase: some View {
+        if #available(iOS 18, *) { tabViewModern } else { tabViewLegacy }
+    }
+
+    private var tabs: some View {
+        tabViewBase
         // `lastListTab` is every window's; this window keeps the list tab it
         // opened on even when another window picks a different one.
         .onAppear {
@@ -331,15 +374,15 @@ struct ConsoleView: View {
             openUsage(link)
         }
         // Retries answered, the Host no longer failing, drop what they saw.
-        .onChange(of: hostIssuesSheetExplained) { _, explained in
+        .onChangeCompat(of: hostIssuesSheetExplained) { _, explained in
             hostIssuesLastFailures = hostIssuesLastFailures.filter { explained.contains($0.key) }
         }
-        .onChange(of: filteredHostIssues.isEmpty) { _, isEmpty in
+        .onChangeCompat(of: filteredHostIssues.isEmpty) { _, isEmpty in
             if isEmpty { isShowingHostIssues = false }
         }
         // Once the Host connects again (or leaves the catalog) the sheet has
         // nothing left to explain.
-        .onChange(of: connectionDetailRequest.flatMap { connectionDetail(for: $0) }) {
+        .onChangeCompat(of: connectionDetailRequest.flatMap { connectionDetail(for: $0) }) {
             _, detail in
             if detail == nil { connectionDetailRequest = nil }
         }
@@ -360,7 +403,7 @@ struct ConsoleView: View {
             }
         }
         .animation(.snappy, value: bannerStore.banner)
-        .onChange(of: notificationRouter.path) { old, path in
+        .onChangeCompat(of: notificationRouter.path) { old, path in
             if agentShellRoute?.agentID != path.last { agentShellRoute = nil }
             guard !path.isEmpty else { return }
             bringAgentForward(
@@ -368,17 +411,17 @@ struct ConsoleView: View {
         }
         // A deep link to the Agent already on the path leaves it unchanged,
         // and must still come forward from Hosts, Settings or a sheet.
-        .onChange(of: notificationRouter.repeatLandings) {
+        .onChangeCompat(of: notificationRouter.repeatLandings) { _, _ in
             bringAgentForward(parking: parkedSelection)
         }
         // A Host opened on request belongs to that one visit: once the user
         // leaves the Hosts tab, it reopens on its list.
-        .onChange(of: isHostsTabSelected) { _, isSelected in
+        .onChangeCompat(of: isHostsTabSelected) { _, isSelected in
             if !isSelected, !isShowingHostsSheet { hostsTabRequest = nil }
         }
         // A window widening past the tab bar carries Hosts or Settings over
         // into their sheet, over the list tab beneath them.
-        .onChange(of: usesSidebarNavigation) { _, usesSidebar in
+        .onChangeCompat(of: usesSidebarNavigation) { _, usesSidebar in
             guard usesSidebar else { return }
             if isHostsTabSelected {
                 hostsTabRequest = hostsTabRequest.map {
@@ -394,7 +437,7 @@ struct ConsoleView: View {
         }
         // Drop removed Hosts without losing remaining selections. Removing
         // the last selected Host falls back to All Hosts.
-        .onChange(of: hosts.consoleHosts) { _, hosts in
+        .onChangeCompat(of: hosts.consoleHosts) { _, hosts in
             hostFilter.formIntersection(hosts.map(\.id))
         }
         .environment(\.consoleCommandRegistry, commandRegistry)
@@ -538,8 +581,8 @@ struct ConsoleView: View {
                         }
                         .toolbarItemBackground(.hidden)
                     }
-                    .toolbar(removing: .title)
-                    .toolbar(removing: .sidebarToggle)
+                    .toolbarRemovingTitleCompat(true)
+                    .toolbarRemovingSidebarToggleCompat(true)
                     .bottomBar { usageSidebarFooter }
                     .overlay {
                         GeometryReader { proxy in
@@ -567,13 +610,13 @@ struct ConsoleView: View {
                         .navigationTitle(
                             usageScopeHostID.flatMap { id in hosts.consoleHosts.first { $0.id == id }?.displayName }
                                 ?? String(localized: "All Hosts"))
-                        .toolbarTitleDisplayMode(.inlineLarge)
+                        .toolbarTitleInlineLargeCompat()
                 }
             }
             .background {
                 ConsoleTabBarBridge(chromeScheme: nil, hidesBar: true, request: tabBarRequest)
             }
-            .toolbarVisibility(.hidden, for: .tabBar)
+            .toolbar(.hidden, for: .tabBar)
         } else {
             AgentUsageTabView(
                 entries: usageEntries, scopeHostID: $usageScopeHostID, metric: $usageMetric,
@@ -841,7 +884,7 @@ struct ConsoleView: View {
                     .toolbar { toolbar(for: tab) }
                     // `toolbar(for:)` puts the list's title at the bar's
                     // leading edge itself.
-                    .toolbar(removing: usesSidebarNavigation ? .title : nil)
+                    .toolbarRemovingTitleCompat(usesSidebarNavigation)
                     .bottomBar {
                         if usesSidebarNavigation {
                             sidebarFooter(for: tab)
@@ -853,7 +896,7 @@ struct ConsoleView: View {
                     // the sidebar has a bare one beside its others, and the
                     // detail one to bring the sidebar back. Removed here, it
                     // leaves the whole split view.
-                    .toolbar(removing: usesSidebarNavigation ? .sidebarToggle : nil)
+                    .toolbarRemovingSidebarToggleCompat(usesSidebarNavigation)
                     // Beside a detail, both columns wear the terminal's theme
                     // so they read as one window.
                     .modifier(SplitColumnTheme(
@@ -921,19 +964,19 @@ struct ConsoleView: View {
             // its app switcher snapshot. Applying that layout's default would
             // leave the split view to report it back on return, as if the
             // user had chosen it, so the layout waits for the scene's return.
-            .onChange(of: presentation, initial: true) { _, presentation in
+            .onChangeCompat(of: presentation, initial: true) { _, presentation in
                 guard scenePhase != .background else { return }
                 splitVisibilities[tab, default: ConsoleSplitVisibilityState()]
                     .update(from: presentation)
             }
-            .onChange(of: scenePhase) { _, phase in
+            .onChangeCompat(of: scenePhase) { _, phase in
                 guard phase != .background else { return }
                 splitVisibilities[tab, default: ConsoleSplitVisibilityState()]
                     .update(from: presentation)
             }
             // A sidebar's switch hands this split view the other list, whose
             // state may predate the layout.
-            .onChange(of: tab) { _, tab in
+            .onChangeCompat(of: tab) { _, tab in
                 splitVisibilities[tab, default: ConsoleSplitVisibilityState()]
                     .update(from: presentation)
             }
@@ -947,7 +990,7 @@ struct ConsoleView: View {
             ConsoleTabBarBridge(
                 chromeScheme: tabBarChromeScheme, hidesBar: hidesTabBar, request: tabBarRequest)
         }
-        .toolbarVisibility(hidesTabBar ? .hidden : .automatic, for: .tabBar)
+        .toolbar(hidesTabBar ? .hidden : .automatic, for: .tabBar)
     }
 
     /// Beside an iPad's sidebar both lists stay built, the one not shown
@@ -968,11 +1011,8 @@ struct ConsoleView: View {
             // One field for both lists, searching the one on show.
             .searchable(
                 text: tab == .terminals ? $terminalSearchText : $agentSearchText,
-                isPresented: tab == .terminals
-                    ? $isTerminalSearchPresented : $isAgentSearchPresented,
                 placement: .navigationBarDrawer(displayMode: .automatic),
                 prompt: tab == .terminals ? String(localized: "Search Terminals") : String(localized: "Search Agents"))
-            .searchFocused($focusedSearch, equals: tab)
             .sidebarSearchDrawer(following: tab)
             // The title's list menu opens from here rather than from the
             // title: anything a bar item presents folds back onto the item's
@@ -1066,7 +1106,7 @@ struct ConsoleView: View {
             hosts: hosts.consoleHosts, hostFilter: $hostFilter,
             agentStatuses: tab == .agents ? listPresentation : nil,
             counts: statusFilterCounts)
-            .presentationCompactAdaptation(.popover)
+            .presentationCompactAdaptationPopoverCompat()
     }
 
     private func filterButton(for tab: ConsoleTab) -> some View {
@@ -1633,7 +1673,7 @@ struct ConsoleView: View {
     private func removedWorktreeSurface(
         _ receipt: WorktreeRemovalReceipt
     ) -> some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label("Worktree Removed", systemImage: "checkmark.circle")
         } description: {
             Text(
@@ -1661,8 +1701,8 @@ struct ConsoleView: View {
                     dimsBackground: false)
             }
         } else {
-            ContentUnavailableView(
-                presentation.title, systemImage: presentation.systemImage,
+            CompatUnavailableView(
+                verbatim: presentation.title, systemImage: presentation.systemImage,
                 description: Text(presentation.message))
         }
     }
@@ -1673,13 +1713,13 @@ struct ConsoleView: View {
         case .noHosts:
             noHostsView
         case .noAgents:
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label("No Agents", systemImage: "rectangle.on.rectangle.slash")
             } description: {
                 Text("Agents detected on your Hosts appear here.")
             }
         case .noAgentsOnHost(let hostName):
-            ContentUnavailableView {
+            CompatUnavailableView {
                 Label(
                     !hostName.isEmpty
                         ? String(localized: "No Agents on \(hostName)")
@@ -1693,7 +1733,7 @@ struct ConsoleView: View {
             }
         case .noSearchResults:
             if agentSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("No Matching Agents", systemImage: "line.3.horizontal.decrease.circle")
                 } actions: {
                     Button("Show All") { listPresentation.clearStatusFilter() }
@@ -1702,7 +1742,7 @@ struct ConsoleView: View {
                 }
             } else if !listPresentation.statusFilter.isEmpty {
                 // The filter may be what hides the match, and it outlives the search.
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("No Results for \u{201C}\(agentSearchText)\u{201D}", systemImage: "magnifyingglass")
                 } description: {
                     Text("The status filter is on.")
@@ -1712,7 +1752,7 @@ struct ConsoleView: View {
                         .accessibilityIdentifier("agents.status-filter.clear-search")
                 }
             } else {
-                ContentUnavailableView.search(text: agentSearchText)
+                CompatUnavailableView("No Results", systemImage: "magnifyingglass", description: Text("No results for \"\(agentSearchText)\"."))
             }
         case .rows:
             List(selection: selectedItem) {
@@ -1729,7 +1769,7 @@ struct ConsoleView: View {
     }
 
     private var noHostsView: some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label("No Hosts", systemImage: "server.rack")
         } description: {
             Text("Add a machine that runs herdr to see its Agents and Terminals here.")
@@ -1809,7 +1849,7 @@ struct ConsoleView: View {
                 onToggle: { toggleWorkspaceSection(primary.id) }
             )
             .modifier(ConsoleWorkspaceCardRow(placed: placed, indent: .icon, top: 8, bottom: 4))
-            .selectionDisabled()
+            .selectionDisabledCompat()
         case .summary:
             ConsoleWorkspaceCardSummary(
                 card: card,
@@ -1820,7 +1860,7 @@ struct ConsoleView: View {
             .modifier(
                 ConsoleWorkspaceCardRow(
                     placed: placed, indent: .text, top: 0, bottom: 6, fillsShortestRow: false))
-            .selectionDisabled()
+            .selectionDisabledCompat()
         case .checkout(let section):
             ConsoleCheckoutHeader(
                 section: section, title: checkoutTitle(section),
@@ -1828,7 +1868,7 @@ struct ConsoleView: View {
             )
             .modifier(foldReveal(placed, in: card))
             .modifier(ConsoleWorkspaceCardRow(placed: placed, indent: .icon, top: 0, bottom: 0))
-            .selectionDisabled()
+            .selectionDisabledCompat()
         case .agent(let agent, let section, let standsAlone):
             agentLink(
                 agent,
@@ -2060,7 +2100,7 @@ struct ConsoleView: View {
         // Checkout, and an exit from Working while none does waits for one.
         .onAppear { console.rowChanges.rowAppeared(agent) }
         .onDisappear { console.rowChanges.rowDisappeared(agent.id) }
-        .onChange(of: agent.directory == nil) { _, lacksDirectory in
+        .onChangeCompat(of: agent.directory == nil) { _, lacksDirectory in
             if !lacksDirectory { console.rowChanges.agentReportedDirectory(agent) }
         }
         .modifier(background)
@@ -2538,9 +2578,8 @@ private struct ConsoleListSearch: ViewModifier {
         if showsField {
             content
                 .searchable(
-                    text: $text, isPresented: $isPresented,
+                    text: $text,
                     placement: .navigationBarDrawer(displayMode: .automatic), prompt: prompt)
-                .searchFocused(focus, equals: tab)
         } else {
             content
         }
@@ -2581,16 +2620,11 @@ struct ConsoleListFilterChoices: View {
                     }
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { hostContentHeight = $0 }
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollIndicatorsFlash(onAppear: true)
+                .scrollBounceBasedOnSizeCompat()
+                .scrollIndicatorsFlashCompat(onAppear: true)
                 .frame(minHeight: 44, idealHeight: min(hostContentHeight, 220), maxHeight: min(hostContentHeight, 220))
                 .accessibilityIdentifier("console.filters.hosts")
-                .onScrollGeometryChange(for: HostScrollHint.self) { geometry in
-                    guard geometry.contentSize.height > geometry.containerSize.height + 1 else { return .fits }
-                    return geometry.visibleRect.maxY < geometry.contentSize.height - 1 ? .moreBelow : .atEnd
-                } action: { _, hint in
-                    hostScrollHint = hint
-                }
+                .modifier(HostScrollHintObserver(hint: $hostScrollHint, fits: .fits, moreBelow: .moreBelow, atEnd: .atEnd))
                 // Keep the hint's space at the end, so scrolling never
                 // moves the divider or the status choices beneath it.
                 Image(systemName: "chevron.down.2")
@@ -2626,7 +2660,7 @@ struct ConsoleListFilterChoices: View {
                     }
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { statusContentHeight = $0 }
                 }
-                .scrollBounceBehavior(.basedOnSize)
+                .scrollBounceBasedOnSizeCompat()
                 .frame(minHeight: 44, idealHeight: min(statusContentHeight, 400), maxHeight: min(statusContentHeight, 400))
             }
         }
@@ -2752,7 +2786,7 @@ private struct SidebarListChoices: View {
         }
         .padding(.vertical, 6)
         .frame(width: 220)
-        .presentationCompactAdaptation(.popover)
+        .presentationCompactAdaptationPopoverCompat()
     }
 
     private static func symbol(for list: ConsoleTab) -> String {
@@ -3048,7 +3082,7 @@ struct MissingAgentPresentation: Equatable {
 
 /// One link of `ConsoleView.body`'s chain, which is at the type checker's limit.
 private struct ConsoleNoticesAndResets: ViewModifier {
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     @Binding var pendingSavedChatRemoval: ConsoleAgent?
     let savedChatRemovalMessage: (ConsoleAgent) -> String
     let removeSavedChat: (ConsoleAgent) -> Void
@@ -3070,7 +3104,7 @@ private struct UsageTurnedOffReset: ViewModifier {
     let reset: () -> Void
 
     func body(content: Content) -> some View {
-        content.onChange(of: isEnabled) { _, enabled in
+        content.onChangeCompat(of: isEnabled) { _, enabled in
             if !enabled { reset() }
         }
     }
@@ -3227,9 +3261,13 @@ private struct SplitColumnTheme: ViewModifier {
 
     func body(content: Content) -> some View {
         if let colors {
-            content
-                .wearsTheme(colors)
-                .containerBackground(colors[keyPath: fill], for: .navigation)
+            if #available(iOS 18, *) {
+                content
+                    .wearsTheme(colors)
+                    .containerBackground(colors[keyPath: fill], for: .navigation)
+            } else {
+                content.wearsTheme(colors)
+            }
         } else {
             content
         }
@@ -3249,7 +3287,7 @@ private struct ConsoleAgentListStyle: ViewModifier {
                 .environment(\.defaultMinListRowHeight, 0)
                 .environment(\.workspaceCardMinRowHeight, minRowHeight)
                 .listStyle(.insetGrouped)
-                .listSectionSpacing(.custom(ConsoleWorkspaceCardMetrics.gap))
+                .listSectionSpacingCompat(ConsoleWorkspaceCardMetrics.gap)
                 .scrollContentBackground(.hidden)
                 // Beside the sidebar, its glass, as the plain list shows.
                 .background(isSidebarColumn ? Color.clear : Color(uiColor: .systemBackground))
@@ -3277,7 +3315,7 @@ private struct ConsoleDetailCoresRetention: ViewModifier {
     let held: Set<ConsoleSelection>
 
     func body(content: Content) -> some View {
-        content.onChange(of: held) { _, held in cores.keep(only: held) }
+        content.onChangeCompat(of: held) { _, held in cores.keep(only: held) }
     }
 }
 
@@ -3351,8 +3389,7 @@ struct NavigationBarBand: Equatable {
 /// frame SwiftUI does not expose.
 /// Says how a close or a removal ended when the screen that asked has gone.
 private struct ConsoleOutcomeNoticeAlert: ViewModifier {
-    let console: ConsoleStore
-
+    @ObservedObject var console: ConsoleStore
     func body(content: Content) -> some View {
         let notice = console.outcomeNotices.first
         content.alert(
@@ -3434,6 +3471,26 @@ private struct NavigationBarTopReader: UIViewRepresentable {
                 responder = current.next
             }
             return nil
+        }
+    }
+}
+
+/// iOS 16: scroll-geometry observation is iOS 18; older systems keep the hint at its default.
+private struct HostScrollHintObserver<Hint: Equatable>: ViewModifier {
+    @Binding var hint: Hint
+    let fits: Hint
+    let moreBelow: Hint
+    let atEnd: Hint
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 18, *) {
+            content.onScrollGeometryChange(for: Hint.self) { geometry in
+                guard geometry.contentSize.height > geometry.containerSize.height + 1 else { return fits }
+                return geometry.visibleRect.maxY < geometry.contentSize.height - 1 ? moreBelow : atEnd
+            } action: { _, new in
+                hint = new
+            }
+        } else {
+            content
         }
     }
 }

@@ -1,4 +1,4 @@
-import Observation
+import Combine
 import SwiftUI
 
 /// The stores every window shares, and the app-wide wiring between them.
@@ -122,7 +122,7 @@ final class HeelerAppModel {
         // after the app suspends. Fail closed on a missing opt-in, key, or
         // device token — the same gates the registration write uses.
         let liveActivities = HostLiveActivityCoordinator(
-            controller: ActivityKitLiveActivityController(),
+            controller: makeLiveActivityController(),
             preferences: LiveActivityPreferences(),
             transports: console,
             // Live Activity writes know a Host by id; its herdr session
@@ -333,11 +333,23 @@ final class HeelerAppModel {
     }
 
     /// Like `observe`, with the value it changed from.
+    /// iOS 16: ObservableObject has no value tracking, so any change in the
+    /// stores the observers read fires a re-read.
+    private var storeChanges: AnyPublisher<Void, Never> {
+        Publishers.MergeMany(
+            console.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
+            console.pins.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
+            notificationPreferences.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
+            activity.objectWillChange.map { _ in () }.eraseToAnyPublisher(),
+            pushRegistration.objectWillChange.map { _ in () }.eraseToAnyPublisher()
+        ).eraseToAnyPublisher()
+    }
+
     private func observeChange<Value: Equatable>(
         _ read: @escaping @MainActor () -> Value,
         onChange: @escaping @MainActor (_ old: Value, _ new: Value) -> Void
     ) {
-        observers.append(StoreChangeObserver(read: read, onChange: onChange))
+        observers.append(StoreChangeObserver(read: read, onChange: onChange, trigger: storeChanges))
     }
 }
 
@@ -351,20 +363,24 @@ private final class StoreChangeObserver<Value: Equatable> {
     private let read: @MainActor () -> Value
     private let onChange: @MainActor (Value, Value) -> Void
     private var lastValue: Value
+    private var subscription: AnyCancellable?
 
-    init(read: @escaping @MainActor () -> Value, onChange: @escaping @MainActor (Value, Value) -> Void) {
+    init(
+        read: @escaping @MainActor () -> Value,
+        onChange: @escaping @MainActor (Value, Value) -> Void,
+        trigger: AnyPublisher<Void, Never>
+    ) {
         self.read = read
         self.onChange = onChange
         lastValue = read()
-        track()
+        // objectWillChange fires before the mutation lands; re-read on the next main turn.
+        subscription = trigger.sink { [weak self] in
+            Task { @MainActor in self?.check() }
+        }
     }
 
-    private func track() {
-        let value = withObservationTracking {
-            read()
-        } onChange: { [weak self] in
-            Task { @MainActor in self?.track() }
-        }
+    private func check() {
+        let value = read()
         guard value != lastValue else { return }
         let old = lastValue
         lastValue = value

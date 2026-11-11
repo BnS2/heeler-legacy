@@ -188,7 +188,7 @@ private struct PluginNoticeSheetModifier: ViewModifier {
                     }
                 }
             }
-            .onChange(of: notice == nil) { _, resolved in
+            .onChangeCompat(of: notice == nil) { _, resolved in
                 if resolved { isPresented = false }
             }
     }

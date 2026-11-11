@@ -53,7 +53,7 @@ struct AgentTitleRenameSheet: View {
                     }
                 }
             }
-            .onChange(of: store.state) { if store.state == .renamed { dismiss() } }
+            .onChangeCompat(of: store.state) { _, _ in if store.state == .renamed { dismiss() } }
             .interactiveDismissDisabled(store.isBusy)
         }
         .presentationDetents([.medium, .large])

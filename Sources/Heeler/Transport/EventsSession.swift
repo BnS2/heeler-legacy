@@ -1,5 +1,4 @@
 import Foundation
-import Synchronization
 
 /// Bounded backoff for transient events-channel failures (#18): capped
 /// exponential delay, unlimited attempts. Action-required failures stop and

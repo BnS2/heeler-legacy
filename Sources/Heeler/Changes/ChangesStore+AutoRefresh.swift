@@ -1,26 +1,25 @@
+import Combine
 import Foundation
-import Observation
 
 /// The status fan-out follows only the opening Agent. Other Agents in the
 /// same Checkout do not drive freshness in v1.
 @MainActor
-@Observable
-final class ChangesAutoRefresh {
-    var status: AgentStatus?
-    var readWasWhileWorking = false
-    @ObservationIgnored var readSawWorking = false
-    @ObservationIgnored var hasBaseline = false
+final class ChangesAutoRefresh: ObservableObject {
+    @Published var status: AgentStatus?
+    @Published var readWasWhileWorking = false
+    var readSawWorking = false
+    var hasBaseline = false
     /// The connection the latest live status came over.
-    @ObservationIgnored var liveConnection: UInt64?
-    @ObservationIgnored var pending = false
-    @ObservationIgnored var statusTask: Task<Void, Never>?
+    var liveConnection: UInt64?
+    var pending = false
+    var statusTask: Task<Void, Never>?
     /// Screens following the stream; see `followAgentStatus()`.
-    @ObservationIgnored var followers = 0
-    @ObservationIgnored var statusID = UUID()
-    @ObservationIgnored var debounce: Task<Void, Never>?
-    @ObservationIgnored var debounceID = UUID()
-    @ObservationIgnored let agentStatus: (@MainActor () -> AsyncStream<ConsoleStore.AgentStatusUpdate>)?
-    @ObservationIgnored let sleep: @Sendable (Duration) async throws -> Void
+    var followers = 0
+    var statusID = UUID()
+    var debounce: Task<Void, Never>?
+    var debounceID = UUID()
+    let agentStatus: (@MainActor () -> AsyncStream<ConsoleStore.AgentStatusUpdate>)?
+    let sleep: @Sendable (Duration) async throws -> Void
 
     init(
         agentStatus: (@MainActor () -> AsyncStream<ConsoleStore.AgentStatusUpdate>)?,

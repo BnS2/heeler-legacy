@@ -5,7 +5,7 @@ import SwiftUI
 /// is not a button: only a top-level directory expands.
 struct ChangesUntrackedDirectoryRows: View {
     let directory: ChangedFile
-    let store: ChangesStore
+    @ObservedObject var store: ChangesStore
     @State private var toggleTasks: [Task<Void, Never>] = []
 
     var body: some View {

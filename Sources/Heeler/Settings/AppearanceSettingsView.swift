@@ -6,8 +6,7 @@ import SwiftUI
 /// NavigationStack.
 struct AppearanceSettingsView: View {
     let terminal: TerminalSettings
-    let appearance: AppAppearanceSettings
-
+    @ObservedObject var appearance: AppAppearanceSettings
     var body: some View {
         Form {
             ThemeSection(terminal: terminal, appearance: appearance)
@@ -24,8 +23,7 @@ struct AppearanceSettingsView: View {
 /// slot opening a picker with its own live preview.
 private struct ThemeSection: View {
     let terminal: TerminalSettings
-    let appearance: AppAppearanceSettings
-
+    @ObservedObject var appearance: AppAppearanceSettings
     var body: some View {
         Section {
             modePicker
@@ -141,7 +139,7 @@ private struct ChatAppearanceSection: View {
             .accessibilityIdentifier("settings.chat.textSize")
             Text("Agents reply here as they would in Chat.")
                 .dynamicTypeSize(textSize)
-                .fontDesign(font.design)
+                .fontDesignCompat(font.design)
                 .padding(.vertical, 4)
                 .accessibilityIdentifier("settings.chat.textSample")
             Toggle("Fold Finished Turns", isOn: $foldsFinishedTurns)

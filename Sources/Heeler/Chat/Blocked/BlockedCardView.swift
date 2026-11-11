@@ -7,7 +7,7 @@ import SwiftUI
 /// mode says so. Nothing asks for confirmation and nothing can be undone,
 /// as in the terminal.
 struct BlockedCardView: View {
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     /// The tallest the card's content grows before it scrolls.
     let maxHeight: CGFloat
     let openTerminal: () -> Void
@@ -45,7 +45,7 @@ struct BlockedCardView: View {
 
 private struct BlockedDialogCard: View {
     let card: BlockedCard
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     let maxHeight: CGFloat
     @State private var text = ""
     @State private var isAddingNote = false
@@ -85,7 +85,7 @@ private struct BlockedDialogCard: View {
                 }
                 .disabled(!isReady)
             }
-            .scrollIndicatorsFlash(onAppear: pinsChoices)
+            .scrollIndicatorsFlashCompat(onAppear: pinsChoices)
             if pinsChoices {
                 trustChoices
                     .disabled(!isReady)
@@ -519,7 +519,7 @@ private struct BlockedDialogCard: View {
 
 /// The card folded away, with Stop still at hand.
 private struct BlockedCollapsedBar: View {
-    let store: BlockedCardStore
+    @ObservedObject var store: BlockedCardStore
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var dialog: BlockedDialog? {
@@ -1073,7 +1073,7 @@ struct BlockedScrollingContent<Content: View>: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
         }
         .frame(minHeight: 0, idealHeight: height, maxHeight: height)
-        .scrollBounceBehavior(.basedOnSize)
+        .scrollBounceBasedOnSizeCompat()
         .modifier(BlockedEdgeFade(isActive: fadesEdges, hidden: $hidden))
     }
 }
@@ -1088,7 +1088,7 @@ private struct BlockedEdgeFade: ViewModifier {
     @Binding var hidden: Hidden
 
     func body(content: Content) -> some View {
-        if isActive {
+        if isActive, #available(iOS 18, *) {
             content
                 .onScrollGeometryChange(for: Hidden.self) { geometry in
                     let offset = geometry.contentOffset.y + geometry.contentInsets.top

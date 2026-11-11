@@ -1,7 +1,6 @@
 import Foundation
 import HeelerOverlay
 import OSLog
-import Synchronization
 
 extension OverlayError {
     fileprivate var isDialFailure: Bool {

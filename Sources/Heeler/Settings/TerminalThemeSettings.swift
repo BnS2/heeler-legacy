@@ -1,7 +1,6 @@
 import Foundation
 import GhosttyTerminal
 import GhosttyTheme
-import Observation
 import SwiftUI
 
 /// A curated theme choice. Paired options resolve to different catalog themes
@@ -211,8 +210,7 @@ struct TerminalThemeColors: Sendable, Equatable {
 /// a slot contributes the half matching that slot; a single dark option in the
 /// light slot is how "dark terminal even in Light Mode" is expressed.
 @MainActor
-@Observable
-final class TerminalThemeSettings {
+final class TerminalThemeSettings: ObservableObject {
     /// Pre-slot releases persisted a single selection under this key; it seeds
     /// both slots on first launch so the rendered pair does not change.
     private static let legacyDefaultsKey = "terminal-theme"
@@ -223,9 +221,9 @@ final class TerminalThemeSettings {
     static let defaultLightSelection = TerminalThemeOption.followSystem
     static let defaultDarkSelection = TerminalThemeOption.vesper
 
-    private(set) var lightSelection: TerminalThemeOption
-    private(set) var darkSelection: TerminalThemeOption
-    @ObservationIgnored private nonisolated(unsafe) let defaults: UserDefaults
+    @Published private(set) var lightSelection: TerminalThemeOption
+    @Published private(set) var darkSelection: TerminalThemeOption
+    private nonisolated(unsafe) let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

@@ -36,8 +36,8 @@ struct LaunchPresetSummary: View {
 /// Edits one Launch Preset: its name, harness, Account, arguments and any
 /// environment variables. Save stays off while the preset has a problem.
 struct LaunchPresetEditor: View {
-    let store: LaunchPresetStore
-    let console: ConsoleStore
+    @ObservedObject var store: LaunchPresetStore
+    @ObservedObject var console: ConsoleStore
     @State private var draft: LaunchPreset
     @State private var usesOtherFolder: Bool
     @Environment(\.dismiss) private var dismiss
@@ -75,7 +75,7 @@ struct LaunchPresetEditor: View {
                         Text(kind.displayName).tag(kind)
                     }
                 }
-                .onChange(of: draft.kind) {
+                .onChangeCompat(of: draft.kind) { _, _ in
                     draft.accountDirectory = nil
                     usesOtherFolder = false
                 }

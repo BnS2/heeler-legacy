@@ -1,15 +1,14 @@
+import Combine
 import Foundation
-import Observation
 
 /// Each Host's Heeler plugin, read on demand over the Console's existing
 /// connection so Settings can say which features the Host's plugin lacks.
 /// Reads happen only when a screen asks: connecting a Host sends nothing.
 /// A Host without a connection reads as `.unavailable`.
 @MainActor
-@Observable
-final class HeelerPluginStatusStore {
-    private(set) var statuses: [Host.ID: HeelerPluginStatus] = [:]
-    @ObservationIgnored private var requests: [Host.ID: UUID] = [:]
+final class HeelerPluginStatusStore: ObservableObject {
+    @Published private(set) var statuses: [Host.ID: HeelerPluginStatus] = [:]
+    private var requests: [Host.ID: UUID] = [:]
 
     func status(for hostID: Host.ID) -> HeelerPluginStatus? {
         statuses[hostID]

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AgentListFieldsSettingsView: View {
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     let hosts: [Host]
     @State private var editor: AgentListFieldsEditor
 
@@ -17,7 +17,7 @@ struct AgentListFieldsSettingsView: View {
     var body: some View {
         Group {
             if hosts.isEmpty {
-                ContentUnavailableView {
+                CompatUnavailableView {
                     Label("No Hosts", systemImage: "desktopcomputer")
                 } description: {
                     Text(AgentListFieldsCopy.noHosts)
@@ -39,8 +39,8 @@ struct AgentListFieldsSettingsView: View {
             AgentLayoutErrorView(editor: editor)
         }
         .listStyle(.plain)
-        .listSectionSpacing(AgentListFieldsChrome.hostSpacing)
-        .contentMargins(.horizontal, AgentListFieldsChrome.pageInset, for: .scrollContent)
+        .listSectionSpacingCompat(AgentListFieldsChrome.hostSpacing)
+        .contentMarginsHorizontalCompat(AgentListFieldsChrome.pageInset)
         .readableColumnPage(contentMargin: AgentListFieldsChrome.pageInset)
         .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))
@@ -90,9 +90,9 @@ struct AgentListFieldsSettingsView: View {
 /// Agent on the Host shares these rows; there are no per-kind overrides.
 struct AgentListFieldsHostDetailView: View {
     let host: Host
-    let console: ConsoleStore
+    @ObservedObject var console: ConsoleStore
     let hosts: [Host]
-    var editor: AgentListFieldsEditor
+    @ObservedObject var editor: AgentListFieldsEditor
     @State private var addingField: AgentListFieldsEditorDestination?
     @State private var confirmingSync = false
     @State private var confirmingApply = false
@@ -120,7 +120,7 @@ struct AgentListFieldsHostDetailView: View {
             .task {
                 if followsPlugin { await console.refreshPluginStatuses(for: [host.id]) }
             }
-            .onChange(of: layout) { appliedMessage = nil }
+            .onChangeCompat(of: layout) { _, _ in appliedMessage = nil }
     }
 
     private var layout: AgentRowLayout { editor.layout(for: host.id) }
@@ -143,8 +143,8 @@ struct AgentListFieldsHostDetailView: View {
             AgentLayoutErrorView(editor: editor)
         }
         .listStyle(.plain)
-        .listSectionSpacing(AgentListFieldsChrome.hostSpacing)
-        .contentMargins(.horizontal, AgentListFieldsChrome.pageInset, for: .scrollContent)
+        .listSectionSpacingCompat(AgentListFieldsChrome.hostSpacing)
+        .contentMarginsHorizontalCompat(AgentListFieldsChrome.pageInset)
         .readableColumnPage(contentMargin: AgentListFieldsChrome.pageInset)
         .scrollContentBackground(.hidden)
         .background(Color(uiColor: .systemGroupedBackground))

@@ -5,11 +5,11 @@ import UIKit
 /// the privacy disclosure, and the self-builder relay override. Pushed from
 /// the settings root, which owns the NavigationStack.
 struct NotificationSettingsView: View {
-    let pushRegistration: PushRegistrationStore
-    let notificationPreferences: NotificationPreferencesStore
-    @Bindable var relaySettings: NotificationRelaySettings
-    let liveActivities: HostLiveActivityCoordinator
-    let pluginStatuses: HeelerPluginStatusStore
+    @ObservedObject var pushRegistration: PushRegistrationStore
+    @ObservedObject var notificationPreferences: NotificationPreferencesStore
+    @ObservedObject var relaySettings: NotificationRelaySettings
+    @ObservedObject var liveActivities: HostLiveActivityCoordinator
+    @ObservedObject var pluginStatuses: HeelerPluginStatusStore
     let refreshPluginStatuses: @MainActor ([Host.ID]) async -> Void
     /// Opens a core Host's page in Hosts with its Host Helper sheet up; nil
     /// leaves the Host pages without that row.
@@ -55,7 +55,7 @@ struct NotificationSettingsView: View {
         .task { await refreshPluginStatuses(notificationPreferences.hosts.map(\.id)) }
         // The user can finish push bootstrap on this very screen; the
         // per-Host rows appear the moment the token lands.
-        .onChange(of: pushRegistration.deviceToken) { _, token in
+        .onChangeCompat(of: pushRegistration.deviceToken) { _, token in
             guard token != nil else { return }
             Task { await notificationPreferences.refresh() }
         }

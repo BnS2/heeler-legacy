@@ -513,7 +513,7 @@ struct ChatUnavailableView: View {
     var addExtension: (() -> Void)?
 
     var body: some View {
-        ContentUnavailableView {
+        CompatUnavailableView {
             Label(reason.title(launchNotice: launchNotice), systemImage: reason.systemImage(launchNotice: launchNotice))
         } description: {
             Text(reason.explanation(launchNotice: launchNotice))
@@ -624,7 +624,7 @@ struct ChatEmptyConversationView: View {
     var description = String(localized: "Messages you and the Agent send show here.")
 
     var body: some View {
-        ContentUnavailableView(
+        CompatUnavailableView(
             "No Messages Yet", systemImage: "bubble.left.and.bubble.right",
             description: Text(description))
         .accessibilityIdentifier("chat.empty")

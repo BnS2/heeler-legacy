@@ -1,5 +1,5 @@
+import Combine
 import Foundation
-import Observation
 import UIKit
 import UserNotifications
 
@@ -69,8 +69,7 @@ struct SystemPushRegistrationClient: PushRegistrationClient {
 /// launches, so `refresh` silently re-registers whenever permission already
 /// exists instead of caching a token across runs.
 @MainActor
-@Observable
-final class PushRegistrationStore {
+final class PushRegistrationStore: ObservableObject {
     enum State: Equatable {
         /// Not probed yet this launch.
         case unknown
@@ -83,7 +82,7 @@ final class PushRegistrationStore {
         case failed(String)
     }
 
-    private(set) var state: State = .unknown
+    @Published private(set) var state: State = .unknown
 
     private let client: any PushRegistrationClient
     private let environment: APNSEnvironment
