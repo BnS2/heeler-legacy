@@ -7,6 +7,7 @@ Entries reference the pull request that made the change.
 
 ## Heeler Legacy 0.1.0 (pre-release)
 
+- Fix duplicate sidebar toggle icons on iOS 16 by keeping the system toggle.
 - Lower the app minimum to iOS 16, with compatibility fallbacks and corrected
   foreground updates.
 - Add Apple speech recognition, Chat as the default view, terminal tap to type,

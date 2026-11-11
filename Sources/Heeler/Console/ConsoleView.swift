@@ -495,6 +495,12 @@ struct ConsoleView: View {
         horizontalSizeClass == .regular && UIDevice.current.userInterfaceIdiom == .pad
     }
 
+    private var usesCustomSidebarToggle: Bool {
+        // iOS 16 keeps the system toggle, which cannot be removed there.
+        if #available(iOS 17, *) { return usesSidebarNavigation }
+        return false
+    }
+
     /// Hosts, as a tab or a sheet. HostListView brings its own
     /// NavigationStack.
     private func hostList(
@@ -924,7 +930,7 @@ struct ConsoleView: View {
                             .environment(
                                 \.showsDetailBackButton, !presentation.usesRegularColumns)
                             .toolbar {
-                                if usesSidebarNavigation,
+                                if usesCustomSidebarToggle,
                                     splitVisibility(for: tab).isSidebarVisible == false
                                 {
                                     ToolbarItem(placement: .topBarLeading) {
@@ -1214,10 +1220,12 @@ struct ConsoleView: View {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 0) {
                     if !hosts.consoleHosts.isEmpty { newItemButton(for: tab) }
-                    Button("Hide Sidebar", systemImage: "sidebar.left") {
-                        withAnimation(reduceMotion ? nil : .snappy) {
-                            splitVisibilities[tab, default: ConsoleSplitVisibilityState()]
-                                .hideSidebar()
+                    if usesCustomSidebarToggle {
+                        Button("Hide Sidebar", systemImage: "sidebar.left") {
+                            withAnimation(reduceMotion ? nil : .snappy) {
+                                splitVisibilities[tab, default: ConsoleSplitVisibilityState()]
+                                    .hideSidebar()
+                            }
                         }
                     }
                 }
