@@ -13,10 +13,28 @@ struct VoiceInputSettingsTests {
         try body(defaults)
     }
 
-    @Test func voiceInputStaysOffUntilAServiceIsSavedWithKeyAndAgreement() throws {
+    @Test func appleRecognitionStartsReadyAndItsChoicePersists() throws {
         try withDefaults { defaults in
             let secrets = InMemorySecretStore()
             let settings = VoiceInputSettings(defaults: defaults, secrets: secrets)
+            #expect(settings.usesOnDevice)
+            #expect(settings.isReady)
+            #expect(settings.service == nil)
+
+            settings.setUsesOnDevice(false)
+            let reopened = VoiceInputSettings(defaults: defaults, secrets: secrets)
+            #expect(!reopened.usesOnDevice)
+            #expect(!reopened.isReady)
+            reopened.setUsesOnDevice(true)
+            #expect(VoiceInputSettings(defaults: defaults, secrets: secrets).isReady)
+        }
+    }
+
+    @Test func externalServiceStaysOffUntilSavedWithKeyAndAgreement() throws {
+        try withDefaults { defaults in
+            let secrets = InMemorySecretStore()
+            let settings = VoiceInputSettings(defaults: defaults, secrets: secrets)
+            settings.setUsesOnDevice(false)
             #expect(settings.service == nil)
             #expect(!settings.isReady)
 
@@ -103,6 +121,7 @@ struct VoiceInputSettingsTests {
     @Test func removingAKeyAlsoWithdrawsTheAgreement() throws {
         try withDefaults { defaults in
             let settings = VoiceInputSettings(defaults: defaults, secrets: InMemorySecretStore())
+            settings.setUsesOnDevice(false)
             try settings.save(service: .preset(.openAI), custom: .init(), apiKey: "sk", consented: true)
             let endpoint = try #require(settings.endpoint)
             try settings.removeKey(for: endpoint)

@@ -12,7 +12,7 @@ signs with your Apple ID.
 
    ```bash
    xcodebuild -project Heeler.xcodeproj -scheme Heeler -configuration Release \
-     -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+     -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dd -jobs 1 \
      CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
    ```
 

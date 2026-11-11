@@ -34,6 +34,7 @@ struct VoiceInputSessionTests {
         let suite = "hm-voice-session-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
         let settings = VoiceInputSettings(defaults: defaults, secrets: InMemorySecretStore())
+        settings.setUsesOnDevice(false)
         if ready {
             try settings.save(service: .preset(.openAI), custom: .init(), apiKey: "sk-test", consented: true)
         }

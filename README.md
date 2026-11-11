@@ -25,10 +25,8 @@ the Heeler or herdr maintainers. If your device runs iOS 18, use the
 
 ## Install
 
-Source is available now. A downloadable IPA is pending final build verification.
-
 Download `Heeler-ios16.ipa` from the
-[latest release](https://github.com/BnS2/heeler-legacy/releases) and install it
+[v0.1.0 pre-release](https://github.com/BnS2/heeler-legacy/releases/tag/v0.1.0) and install it
 with [Sideloadly](https://sideloadly.io) or AltStore using your Apple ID.
 The IPA is unsigned; your sideloading tool signs it.
 
