@@ -2,188 +2,94 @@
 
 <img src="docs/images/logo.png" width="96" alt="Heeler logo" />
 
-# Heeler
+# Heeler Legacy
 
-<a href="https://apps.apple.com/us/app/heeler-for-herdr/id6797263135"><img src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" alt="Download on the App Store" height="40" /></a>
-<a href="https://testflight.apple.com/join/aXSxRn4r"><img src="docs/images/testflight-badge.svg" alt="Available on TestFlight" height="40" /></a>
+**[Heeler](https://github.com/ZingerLittleBee/Heeler) for iPhones and iPads stuck on iOS 16 and 17.**
 
-**A native iOS companion app for [herdr](https://herdr.dev) — an agent-first terminal runtime.**
-
-[![GitHub stars](https://img.shields.io/github/stars/ZingerLittleBee/Heeler?style=flat-square&color=E8B923&logo=github&logoColor=white)](https://github.com/ZingerLittleBee/Heeler/stargazers)
-[![CI](https://img.shields.io/github/actions/workflow/status/ZingerLittleBee/Heeler/ci.yml?branch=main&label=CI&style=flat-square)](https://github.com/ZingerLittleBee/Heeler/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-6F42C1?style=flat-square)](LICENSE)
-[![Swift](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white&style=flat-square)](https://www.swift.org)
-[![iOS](https://img.shields.io/badge/iOS-18%2B-000000?logo=apple&logoColor=white&style=flat-square)](https://developer.apple.com/ios/)
-[![App Store](https://img.shields.io/badge/App_Store-available-0D96F6?logo=apple&logoColor=white&style=flat-square)](https://apps.apple.com/us/app/heeler-for-herdr/id6797263135)
-
-<a href="https://trendshift.io/repositories/151670?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-151670" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/151670" alt="ZingerLittleBee%2FHeeler | Trendshift" width="250" height="55"/></a>
-
-English | [简体中文](./README-zh.md) | [繁體中文](./README-zh-TW.md) | [日本語](./README-ja.md)
+[![iOS](https://img.shields.io/badge/iOS-16%2B-000000?logo=apple&logoColor=white&style=flat-square)](https://developer.apple.com/ios/)
 
 </div>
 
 ---
 
-Heeler is an independent **herdr mobile client** and agent console for Claude Code, Codex, and other coding Agents on iPhone and iPad. Agents run on your own Hosts in Herdr TUI or the Herdr desktop app (herdr-core); Heeler connects over SSH. Monitor multiple Agents across machines, sorted by who needs you, then open a live terminal or supported Chat conversation to send instructions.
+Heeler is a native iOS client for [herdr](https://herdr.dev): it connects to your
+own machines over SSH and lets you watch and steer the coding agents running
+there. The official app needs iOS 18. This fork lowers that to iOS 16.0 so it
+runs on older hardware, such as the 5th-generation iPad, which stops at
+iPadOS 16.7.
 
-## Screenshots
+This is an unofficial fork. It is not on the App Store and is not supported by
+the Heeler or herdr maintainers. If your device runs iOS 18, use the
+[official app](https://apps.apple.com/us/app/heeler-for-herdr/id6797263135).
 
-| Agent Console | Live terminal | Chat |
-| --- | --- | --- |
-| <img src="docs/images/console-iphone.png" width="240" alt="Agent Console listing Agents across Hosts with their status on iPhone" /> | <img src="docs/images/live-terminal-iphone.png" width="240" alt="Agent's live terminal with Direct Input on iPhone" /> | <img src="docs/images/chat-iphone.png" width="240" alt="Chat showing an Agent's conversation as native messages on iPhone" /> |
+## Install
 
-| Keyboard | Changes | Terminals |
-| --- | --- | --- |
-| <img src="docs/images/agent-iphone.png" width="240" alt="Agent Direct Input with shortcuts and a full Terminal Keyboard on iPhone" /> | <img src="docs/images/changes-iphone.png" width="240" alt="Changes listing a Checkout's staged and unstaged files on iPhone" /> | <img src="docs/images/terminal-iphone.png" width="240" alt="Terminals tab listing shell panes by Host and Workspace on iPhone" /> |
+Source is available now. A downloadable IPA is pending final build verification.
 
-| Skills | Hosts | Live Activity |
-| --- | --- | --- |
-| <img src="docs/images/skills-iphone.png" width="240" alt="Composer Skills suggestions on iPhone" /> | <img src="docs/images/hosts-iphone.png" width="240" alt="Hosts tab grouping Hosts by connection status with their latency on iPhone" /> | <img src="docs/images/live-activity-iphone.png" width="240" alt="Lock-screen Live Activity tracking Agents on iPhone" /> |
+Download `Heeler-ios16.ipa` from the
+[latest release](https://github.com/BnS2/heeler-legacy/releases) and install it
+with [Sideloadly](https://sideloadly.io) or AltStore using your Apple ID.
+The IPA is unsigned; your sideloading tool signs it.
 
-| Usage | Widgets | Lock Screen widgets |
-| --- | --- | --- |
-| <img src="docs/images/usage-iphone.png" width="240" alt="Usage tab with 30 days of estimated API cost, Usage Limits, and a daily chart on iPhone" /> | <img src="docs/images/widgets-iphone.png" width="240" alt="Home Screen with Usage and Usage Limits widgets in small and medium sizes on iPhone" /> | <img src="docs/images/widgets-lock-iphone.png" width="240" alt="Lock Screen with Usage and Usage Limits accessory widgets on iPhone" /> |
+With a free Apple ID the install lasts 7 days, then you reinstall the same IPA.
+See [the sideload guide](docs/guides/ios16-sideload.md) for limits and for
+building the IPA yourself.
 
-<a href="docs/ipad-screenshots.md"><img src="docs/images/windowed-ipad.png" width="760" alt="Heeler in a floating iPad window" /></a>
+Setting up herdr and adding a machine work the same as upstream: follow the
+[Heeler README](https://github.com/ZingerLittleBee/Heeler#installation) and its
+[docs](https://docs.heeler.bybee.dev).
 
-[View iPad screenshots](docs/ipad-screenshots.md)
+## What's different from upstream
 
-## Features
+**To run on iOS 16**
 
-- **Console** — every Agent on every machine in one status-sorted list
-  (Blocked first), filterable by Host, updated live.
-- **Herdr desktop and herdr-core** — connect to the Herdr desktop app or
-  headless herdr-core on macOS, Linux, and native Windows. The Console
-  follows the desktop app's spaces and tabs, and live terminals, Chat, the
-  Composer, New Agent, and New Workspace work there too
-  ([Read more](https://docs.heeler.bybee.dev/herdr-core)).
-- **Attach** — the Agent's real terminal rendered by libghostty: native
-  scrollback, momentum touch scrolling that also drives full-screen TUIs,
-  long-press selection, takeover of a stale terminal owner, and quietly
-  collected web links to open later.
-- **Chat** — read an Agent's conversation as native messages instead of a
-  terminal screen, reply from the Composer, and answer a Blocked Agent with
-  buttons; for Claude Code, Codex, Pi, Oh My Pi, Grok Build, and OpenCode
-  ([Read more](https://docs.heeler.bybee.dev/chat)).
-- **Composer** — draft locally with the full iOS keyboard (autocorrect, IME,
-  dictation), then Send once; the tools keyboard adds Agent control keys,
-  Agent Skills, reusable Snippets, and terminal appearance. Voice Input lets
-  you speak to the Composer with your own speech service API key
-  ([Read more](https://docs.heeler.bybee.dev/voice-input)).
-- **Terminal** — open a plain shell in the Agent's directory, with Text and
-  Keys modes and one reused tab per Workspace.
-- **Attachments** — stage a photo or a file up to 64 MiB onto the Host over
-  SFTP and insert its path into the draft.
-- **QR pairing** — scan a Pairing Code to add a machine; keys are generated
-  on device, private keys stay in the Keychain, and the code pins the host
-  key fingerprint.
-- **Notifications + Live Activities** — end-to-end encrypted pushes when an
-  Agent goes Blocked or Done, and a lock-screen / Dynamic Island banner
-  tracking Agents in real time; the relay can never read the content
-  ([PRIVACY.md](PRIVACY.md)).
-- **Usage** — Claude Code and Codex Usage Limits with their reset times, and
-  up to 30 days of Token Usage with its estimated API cost, across all Hosts
-  or one; Home Screen and Lock Screen widgets keep them in view
-  ([Read more](https://docs.heeler.bybee.dev/usage)).
-- **Worktrees** — start an Agent on a clean checkout of the workspace's repo.
-- **Appearance** — System, Light, or Dark; 30 themes with separate Light and
-  Dark slots, worn by terminals, Chat and the app; bundled JetBrains Mono and
-  IBM Plex Mono; pinch to zoom.
-- **Jump Host** — reach unroutable machines through an SSH jump, with keys
-  verified at both hops.
+- Deployment target 16.0. The widgets extension stays on iOS 18 and is left out
+  of the iOS 16 build.
+- `@Observable` stores moved to `ObservableObject`, with explicit change
+  forwarding where SwiftUI no longer tracks reads on its own.
+- Stand-ins for `Synchronization.Mutex`, SwiftUI's `Spring`, the iOS 18 `Tab`
+  API and other newer SwiftUI modifiers.
+- `onChange` wrapper that passes the new value, so code no longer reads a stale
+  `scenePhase` on iOS 16.
+- Live Activities need iOS 16.2 and are off below it.
+- Keychain falls back to the app's own group when the app-group entitlement is
+  missing, as it is under free-account signing.
 
-## How it connects
+**Changes for older iPads**
 
-On macOS and Linux Hosts, Heeler speaks herdr's JSON API over SSH: each request opens a
-direct-streamlocal channel onto `herdr.sock`, one long-lived channel carries
-the event stream, and interactive terminals run `herdr agent attach
---takeover` on an SSH PTY. The only prerequisites are SSH access and a
-running herdr — no server changes, no extra packages. The SSH server must
-allow stream-local forwarding (the OpenSSH default); onboarding calls it out
-when it's disabled. On Fedora, RHEL, and their derivatives, SELinux can deny the
-socket open even when forwarding is allowed — see [SELinux on a Fedora or RHEL
-Host](docs/guides/selinux.md).
+- Voice input uses Apple speech recognition by default, with no API key.
+  Recognition runs locally when supported; otherwise audio goes to Apple.
+  You can turn this off in Settings.
+- Chat is the default Agent view; typing into the raw terminal on an iPad
+  keyboard is clumsy.
+- Tapping anywhere in a terminal brings up the keyboard.
+- A terminal attach stuck on "Connecting" for 15 seconds is retried once.
+- Reconnect backoff tops out at 8 seconds instead of 30, and returning to the
+  app retries a reconnecting Host right away.
+- RSA keys are imported once instead of on every signature.
 
-Native Windows Hosts (herdr >= 0.9.3) connect over SSH and are added manually.
+## Not working or untested
 
-herdr-core Hosts, including machines running the Herdr desktop app, are added manually with their Server Kind confirmed. Heeler carries one framed link to the core: a direct-streamlocal channel onto its socket on macOS and Linux, or `herdr-core connect` over SSH exec on native Windows. Connecting never starts a core on macOS or Linux. The optional Host Helper adds notifications, Live Activities, and Usage on macOS and Linux ([Connect herdr-core](https://docs.heeler.bybee.dev/herdr-core)).
+- No widgets, push notifications or app groups with a free Apple ID.
+- Tailscale, ZeroTier and EasyTier are untested on iOS 16. Their prebuilt
+  libraries target iOS 18.
+- Earlier builds were tried on a 5th-generation iPad (iPadOS 16.7). The release
+  build has not been verified on a physical device. Reports are welcome.
 
-For Tailscale, ZeroTier, or EasyTier access, follow the [Overlay Network setup guides](docs/guides/overlay-networks.md). They cover macOS installation, Tailscale without a VPN on the Mac, Heeler configuration, and connection checks. Heeler joins these networks inside the app without an iOS VPN configuration; you need a Heeler version with **Settings > Overlay Networks**.
+## Building
 
-[View the Heeler setup screenshots](docs/guides/overlay-networks.md#heeler-setup-screenshots) for Tailscale, ZeroTier, and both EasyTier modes.
+Same toolchain as upstream (Xcode, `make help`). Two differences:
 
-Unroutable machines can sit behind an SSH Jump Host:
+- The overlay network binaries are not in the repository. See
+  [Packages/HeelerOverlayNatives](Packages/HeelerOverlayNatives/README.md).
+- Unit tests build for iOS 18 and run on a current simulator.
 
-- [Set up remote access step by step](docs/guides/vps-jump-host-setup.md)
-- [Architecture, security boundaries, and the VPS runbook](docs/guides/vps-jump-host.md)
+[docs/guides/ios16-sideload.md](docs/guides/ios16-sideload.md) has the
+IPA build steps.
 
-A Host can have several routes, such as its LAN address at home and an overlay network or Jump Host elsewhere: [Reach a Host on several routes](docs/guides/host-routes.md).
+## License
 
-## Installation
-
-Install Heeler from the [App Store](https://apps.apple.com/us/app/heeler-for-herdr/id6797263135)
-or [TestFlight](https://testflight.apple.com/join/aXSxRn4r).
-
-- **macOS / Linux:** Install [herdr](https://herdr.dev/docs/install/), enable SSH,
-  then follow the pairing steps below.
-- **Native Windows:** Follow the [Windows setup guide](docs/guides/windows-setup.md).
-- **Herdr desktop app / herdr-core:** Start the desktop app or herdr-core,
-  enable SSH, then add the Host manually:
-  [Connect herdr-core](https://docs.heeler.bybee.dev/herdr-core). Needs
-  Heeler 0.1.18 or later.
-
-## Adding a machine
-
-On a macOS or Linux machine running herdr (Node >= 20, herdr >= 0.7.5, OpenSSH server on —
-macOS: **System Settings > General > Sharing > Remote Login**):
-
-```bash
-herdr plugin install ZingerLittleBee/Heeler --ref plugin --yes
-herdr plugin action invoke heeler.pair
-```
-
-Scan the Pairing Code QR it shows and the machine is added as a Host — the
-code carries the addresses, the host key fingerprint, and SSH key enrollment.
-The same [plugin](plugin/README.md) delivers the encrypted notifications once
-you enable them for the Host in the app. For every step, the popup's keys, and
-troubleshooting, see the [pairing guide](https://docs.heeler.bybee.dev/pairing).
-
-## Opening an Agent from another app
-
-Another app can open an Agent in Heeler with a link:
-
-```text
-heeler://agent?host=my-mac&session=work&pane=w1%3Ap1
-```
-
-- `host` names a saved Host on that session: its address, or its name when
-  no Host on the session has that address. Case is ignored.
-- `session` is the herdr session name. Leave it out, or pass `default`, for
-  the default session.
-- `pane` is herdr's pane id. Leave it out to open the Console.
-
-Percent-encode each value, with `%20` for a space: a `+` stays a plus sign,
-so form encoding (such as JavaScript's `URLSearchParams`) misses a name like
-`Build Box`. When no saved Host on that session matches, or more than one
-does, the link opens the Console.
-
-## Stack
-
-- SwiftUI, iOS 18+, iPhone and iPad. iPad support is restored in 0.1.8 with Magic Keyboard shortcuts, multiwindow, and drag and drop.
-- The repository-local `Packages/HeelerSSH` (libssh2 + OpenSSL) for SSH
-- [libghostty-spm](https://github.com/lakr233/libghostty-spm) for terminal emulation and Metal rendering
-
-See `docs/adr/` for why — the transport story in particular is not obvious.
-
-## Contributing
-
-Issues and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for
-layout, build/test, and conventions.
-
-## Status
-
-Released on the [App Store](https://apps.apple.com/us/app/heeler-for-herdr/id6797263135).
-It is not yet available in every country or region; where it is missing, the
-[TestFlight](https://testflight.apple.com/join/aXSxRn4r) build stays available.
-Built for personal use first and shaped by daily driving, so expect rough edges and
-fast iteration. Not affiliated with the herdr project.
+Apache 2.0, same as upstream. Heeler is by
+[ZingerLittleBee](https://github.com/ZingerLittleBee) and contributors; this
+fork's changes are listed above and in the commit history.
